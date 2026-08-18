@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChudChat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="chat">
+
+        <header class="chat-header">
+            <div>
+                <h1>ChudChat</h1>
+                <span id="status">Connecting...</span>
+            </div>
+        </header>
+
+        <section id="messages" class="messages">
+            <div class="empty">
+                No messages yet.
+            </div>
+        </section>
+
+        <form id="message-form" class="message-form">
+            <input
+                id="username"
+                type="text"
+                placeholder="Username"
+                maxlength="32"
+                required
+            >
+
+            <input
+                id="message"
+                type="text"
+                placeholder="Type a message..."
+                maxlength="500"
+                autocomplete="off"
+                required
+            >
+
+            <button type="submit">➤</button>
+        </form>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>

@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>ChudChat</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -20,16 +22,18 @@
 
         <section id="messages" class="messages">
             <div class="empty">
-                No messages yet.
+                Loading messages...
             </div>
         </section>
 
         <form id="message-form" class="message-form">
+
             <input
                 id="username"
                 type="text"
                 placeholder="Username"
                 maxlength="32"
+                autocomplete="off"
                 required
             >
 
@@ -43,11 +47,15 @@
             >
 
             <button type="submit">➤</button>
+
         </form>
 
     </main>
 
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Our application -->
     <script src="app.js"></script>
 
 </body>

@@ -22,8 +22,8 @@
 <body>
 
 
-<!-- ===================================================== -->
-<!-- LOGIN -->
+<<!-- ===================================================== -->
+<!-- EMAIL OTP AUTH -->
 <!-- ===================================================== -->
 
 <section
@@ -36,7 +36,7 @@
         <h1>ChudChat</h1>
 
         <p class="auth-subtitle">
-            Chat with people.
+            Sign in with your email.
         </p>
 
         <div
@@ -44,130 +44,72 @@
             class="auth-error"
         ></div>
 
+
+        <!-- EMAIL -->
+
         <form
-            id="login-form"
+            id="email-form"
             class="auth-form"
         >
 
             <input
-                id="login-email"
+                id="auth-email"
                 type="email"
                 placeholder="Email"
                 autocomplete="email"
                 required
             >
 
-            <input
-                id="login-password"
-                type="password"
-                placeholder="Password"
-                autocomplete="current-password"
-                required
-            >
-
             <button type="submit">
-                Login
+                Send verification code
             </button>
 
         </form>
 
-        <div class="auth-switch">
 
-            <span>
-                Don't have an account?
-            </span>
+        <!-- OTP -->
 
-            <button
-                id="show-register"
-                type="button"
+        <form
+            id="otp-form"
+            class="auth-form hidden"
+        >
+
+            <input
+                id="auth-otp"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="6-digit code"
+                maxlength="8"
+                required
             >
-                Register
+
+            <button type="submit">
+                Verify code
             </button>
 
-        </div>
-
-    </div>
-
-</section>
+        </form>
 
 
-<!-- ===================================================== -->
-<!-- REGISTER -->
-<!-- ===================================================== -->
-
-<section
-    id="register-screen"
-    class="auth-screen hidden"
->
-
-    <div class="auth-box">
-
-        <h1>ChudChat</h1>
-
-        <p class="auth-subtitle">
-            Create your account.
+        <p
+            id="otp-info"
+            class="auth-subtitle hidden"
+        >
+            We sent a verification code to your email.
         </p>
 
-        <div
-            id="register-error"
-            class="auth-error"
-        ></div>
 
-        <form
-            id="register-form"
-            class="auth-form"
+        <button
+            id="change-email"
+            type="button"
+            class="hidden"
         >
-
-            <input
-                id="register-email"
-                type="email"
-                placeholder="Email"
-                autocomplete="email"
-                required
-            >
-
-            <input
-                id="register-password"
-                type="password"
-                placeholder="Password"
-                autocomplete="new-password"
-                required
-            >
-
-            <input
-                id="register-password-confirm"
-                type="password"
-                placeholder="Confirm password"
-                autocomplete="new-password"
-                required
-            >
-
-            <button type="submit">
-                Create account
-            </button>
-
-        </form>
-
-        <div class="auth-switch">
-
-            <span>
-                Already have an account?
-            </span>
-
-            <button
-                id="show-login"
-                type="button"
-            >
-                Login
-            </button>
-
-        </div>
+            Use a different email
+        </button>
 
     </div>
 
 </section>
-
-
 <!-- ===================================================== -->
 <!-- PROFILE SETUP -->
 <!-- ===================================================== -->
@@ -234,6 +176,11 @@
     class="chat hidden"
 >
 
+
+    <!-- ================================================= -->
+    <!-- CHAT HEADER -->
+    <!-- ================================================= -->
+
     <header class="chat-header">
 
         <div>
@@ -245,6 +192,7 @@
             </span>
 
         </div>
+
 
         <div class="user-controls">
 
@@ -262,40 +210,141 @@
     </header>
 
 
-    <section
-        id="messages"
-        class="messages"
-    >
+    <!-- ================================================= -->
+    <!-- CHAT BODY -->
+    <!-- ================================================= -->
 
-        <div class="empty">
-            Loading messages...
-        </div>
-
-    </section>
+    <div class="chat-body">
 
 
-    <form
-        id="message-form"
-        class="message-form"
-    >
+        <!-- ============================================= -->
+        <!-- USER SIDEBAR -->
+        <!-- ============================================= -->
 
-        <input
-            id="message"
-            type="text"
-            placeholder="Type a message..."
-            maxlength="500"
-            autocomplete="off"
-            required
+        <aside
+            id="user-sidebar"
+            class="user-sidebar"
         >
 
-        <button type="submit">
-            ➤
-        </button>
+            <div class="sidebar-header">
 
-    </form>
+                <h2>Users</h2>
+
+            </div>
+
+
+            <div class="user-search">
+
+                <input
+                    id="user-search"
+                    type="text"
+                    placeholder="Search users..."
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <div
+                id="user-list"
+                class="user-list"
+            >
+
+                <div class="sidebar-empty">
+                    Loading users...
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- ============================================= -->
+        <!-- CONVERSATION -->
+        <!-- ============================================= -->
+
+        <section
+            class="conversation"
+        >
+
+
+            <!-- ========================================= -->
+            <!-- CONVERSATION HEADER -->
+            <!-- ========================================= -->
+
+            <header
+                id="conversation-header"
+                class="conversation-header"
+            >
+
+                <div
+                    id="conversation-user"
+                    class="conversation-user"
+                >
+                    <span class="conversation-placeholder">
+                        Select a user to start chatting
+                    </span>
+                </div>
+
+            </header>
+
+
+            <!-- ========================================= -->
+            <!-- MESSAGES -->
+            <!-- ========================================= -->
+
+            <section
+                id="messages"
+                class="messages"
+            >
+
+                <div class="empty">
+                    Select a user to start a conversation.
+                </div>
+
+            </section>
+
+
+            <!-- ========================================= -->
+            <!-- MESSAGE INPUT -->
+            <!-- ========================================= -->
+
+            <form
+                id="message-form"
+                class="message-form"
+            >
+
+                <input
+                    id="message"
+                    type="text"
+                    placeholder="Select a conversation..."
+                    maxlength="500"
+                    autocomplete="off"
+                    disabled
+                    required
+                >
+
+                <button
+                    type="submit"
+                    disabled
+                >
+                    ➤
+                </button>
+
+            </form>
+
+
+        </section>
+
+
+    </div>
 
 </main>
 
+
+<!-- ===================================================== -->
+<!-- SCRIPTS -->
+<!-- ===================================================== -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 

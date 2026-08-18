@@ -463,3 +463,260 @@ body {
 
     font-size: 13px;
 }
+
+
+/* ============================================================
+   CHAT LAYOUT
+   ============================================================ */
+
+.chat-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+
+/* ============================================================
+   USER SIDEBAR
+   ============================================================ */
+
+.user-sidebar {
+    width: 280px;
+    min-width: 280px;
+
+    display: flex;
+    flex-direction: column;
+
+    border-right: 1px solid #30363d;
+
+    background: #161b22;
+}
+
+
+.sidebar-header {
+    padding: 18px 20px 10px;
+}
+
+
+.sidebar-header h2 {
+    margin: 0;
+
+    font-size: 16px;
+}
+
+
+.user-search {
+    padding: 10px 14px;
+}
+
+
+.user-search input {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 10px 12px;
+
+    border: 1px solid #30363d;
+
+    border-radius: 7px;
+
+    background: #0d1117;
+
+    color: inherit;
+
+    outline: none;
+}
+
+
+.user-search input:focus {
+    border-color: #58a6ff;
+}
+
+
+.user-list {
+    flex: 1;
+
+    overflow-y: auto;
+
+    padding: 6px;
+}
+
+
+/* ============================================================
+   USER ITEM
+   ============================================================ */
+
+.user-item {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 10px;
+
+    border: 0;
+
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: inherit;
+
+    text-align: left;
+
+    cursor: pointer;
+}
+
+
+.user-item:hover {
+    background: #21262d;
+}
+
+
+.user-avatar,
+.conversation-avatar {
+    width: 38px;
+    height: 38px;
+
+    min-width: 38px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #30363d;
+
+    font-weight: 600;
+}
+
+
+.user-info {
+    min-width: 0;
+}
+
+
+.user-display-name {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-weight: 600;
+}
+
+
+.user-username {
+    margin-top: 2px;
+
+    color: #8b949e;
+
+    font-size: 12px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+
+.sidebar-empty {
+    padding: 20px;
+
+    text-align: center;
+
+    color: #8b949e;
+
+    font-size: 13px;
+}
+
+
+/* ============================================================
+   CONVERSATION
+   ============================================================ */
+
+.conversation {
+    flex: 1;
+
+    min-width: 0;
+
+    min-height: 0;
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+.conversation-header {
+    min-height: 66px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 0 20px;
+
+    border-bottom: 1px solid #30363d;
+}
+
+
+.conversation-user {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+}
+
+
+.conversation-name {
+    font-weight: 600;
+}
+
+
+.conversation-username {
+    margin-top: 2px;
+
+    color: #8b949e;
+
+    font-size: 12px;
+}
+
+
+.conversation-placeholder {
+    color: #8b949e;
+
+    font-size: 14px;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 700px) {
+
+    .user-sidebar {
+        width: 220px;
+        min-width: 220px;
+    }
+
+}
+
+
+@media (max-width: 550px) {
+
+    .user-sidebar {
+        width: 190px;
+        min-width: 190px;
+    }
+
+}

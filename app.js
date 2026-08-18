@@ -8,7 +8,6 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
     "sb_publishable_LntMHz6esPpIJszjXzzAzw_W-FVSljU";
 
-
 const client =
     window.supabase.createClient(
         SUPABASE_URL,
@@ -21,14 +20,15 @@ const client =
 // ============================================================
 
 let currentUser = null;
-
 let currentProfile = null;
+
+let currentConversationId = null;
+let currentConversationUser = null;
 
 let realtimeChannel = null;
 
+let allUsers = [];
 
-// Keep track of messages we've already displayed.
-// This prevents duplicates from realtime events.
 const displayedMessageIds = new Set();
 
 
@@ -36,11 +36,10 @@ const displayedMessageIds = new Set();
 // DOM
 // ============================================================
 
+// Screens
+
 const authScreen =
     document.getElementById("auth-screen");
-
-const registerScreen =
-    document.getElementById("register-screen");
 
 const profileScreen =
     document.getElementById("profile-screen");
@@ -49,68 +48,64 @@ const chatScreen =
     document.getElementById("chat-screen");
 
 
-const loginForm =
-    document.getElementById("login-form");
+// OTP authentication
 
-const registerForm =
-    document.getElementById("register-form");
+const emailForm =
+    document.getElementById("email-form");
+
+const otpForm =
+    document.getElementById("otp-form");
+
+const authEmail =
+    document.getElementById("auth-email");
+
+const authOtp =
+    document.getElementById("auth-otp");
+
+const otpInfo =
+    document.getElementById("otp-info");
+
+const changeEmailButton =
+    document.getElementById("change-email");
+
+
+// Profile
 
 const profileForm =
     document.getElementById("profile-form");
 
-
-const showRegister =
-    document.getElementById("show-register");
-
-const showLogin =
-    document.getElementById("show-login");
-
-
-const loginEmail =
-    document.getElementById("login-email");
-
-const loginPassword =
-    document.getElementById("login-password");
-
-
-const registerEmail =
-    document.getElementById("register-email");
-
-const registerPassword =
-    document.getElementById("register-password");
-
-const registerPasswordConfirm =
-    document.getElementById(
-        "register-password-confirm"
-    );
-
-
 const profileUsername =
-    document.getElementById(
-        "profile-username"
-    );
+    document.getElementById("profile-username");
 
 const profileDisplayName =
-    document.getElementById(
-        "profile-display-name"
-    );
+    document.getElementById("profile-display-name");
 
+
+// Errors
 
 const authError =
     document.getElementById("auth-error");
 
-const registerError =
-    document.getElementById("register-error");
-
 const profileError =
     document.getElementById("profile-error");
 
+
+// Chat
 
 const status =
     document.getElementById("status");
 
 const currentUserElement =
     document.getElementById("current-user");
+
+const userSearch =
+    document.getElementById("user-search");
+
+const userList =
+    document.getElementById("user-list");
+
+const conversationUser =
+    document.getElementById("conversation-user");
 
 const messages =
     document.getElementById("messages");
@@ -131,13 +126,14 @@ const logoutButton =
 
 function hideAllScreens() {
 
-    authScreen.classList.add("hidden");
+    if (authScreen)
+        authScreen.classList.add("hidden");
 
-    registerScreen.classList.add("hidden");
+    if (profileScreen)
+        profileScreen.classList.add("hidden");
 
-    profileScreen.classList.add("hidden");
-
-    chatScreen.classList.add("hidden");
+    if (chatScreen)
+        chatScreen.classList.add("hidden");
 }
 
 
@@ -146,14 +142,8 @@ function showLoginScreen() {
     hideAllScreens();
 
     authScreen.classList.remove("hidden");
-}
 
-
-function showRegisterScreen() {
-
-    hideAllScreens();
-
-    registerScreen.classList.remove("hidden");
+    resetOTPForm();
 }
 
 
@@ -179,6 +169,9 @@ function showChatScreen() {
 
 function showError(element, message) {
 
+    if (!element)
+        return;
+
     element.textContent = message;
 
     element.style.display = "block";
@@ -187,6 +180,9 @@ function showError(element, message) {
 
 function clearError(element) {
 
+    if (!element)
+        return;
+
     element.textContent = "";
 
     element.style.display = "none";
@@ -194,10 +190,35 @@ function clearError(element) {
 
 
 // ============================================================
-// LOGIN
+// OTP FORM RESET
 // ============================================================
 
-loginForm.addEventListener(
+function resetOTPForm() {
+
+    clearError(authError);
+
+    if (emailForm)
+        emailForm.classList.remove("hidden");
+
+    if (otpForm)
+        otpForm.classList.add("hidden");
+
+    if (otpInfo)
+        otpInfo.classList.add("hidden");
+
+    if (changeEmailButton)
+        changeEmailButton.classList.add("hidden");
+
+    if (authOtp)
+        authOtp.value = "";
+}
+
+
+// ============================================================
+// SEND OTP
+// ============================================================
+
+emailForm.addEventListener(
     "submit",
     async (event) => {
 
@@ -205,29 +226,61 @@ loginForm.addEventListener(
 
         clearError(authError);
 
-
         const email =
-            loginEmail.value.trim();
+            authEmail.value
+                .trim()
+                .toLowerCase();
 
-        const password =
-            loginPassword.value;
+
+        if (!email) {
+
+            showError(
+                authError,
+                "Please enter your email."
+            );
+
+            return;
+        }
+
+
+        const button =
+            emailForm.querySelector("button");
+
+        button.disabled = true;
+
+        button.textContent =
+            "Sending...";
+
+
+        console.log(
+            "Sending OTP to:",
+            email
+        );
 
 
         const {
-            data,
             error
-        } = await client.auth.signInWithPassword({
+        } = await client.auth.signInWithOtp({
 
             email,
 
-            password
+            options: {
+                shouldCreateUser: true
+            }
+
         });
+
+
+        button.disabled = false;
+
+        button.textContent =
+            "Send verification code";
 
 
         if (error) {
 
             console.error(
-                "LOGIN ERROR:",
+                "OTP SEND ERROR:",
                 error
             );
 
@@ -240,6 +293,145 @@ loginForm.addEventListener(
         }
 
 
+        console.log(
+            "OTP sent successfully."
+        );
+
+
+        emailForm.classList.add(
+            "hidden"
+        );
+
+        otpForm.classList.remove(
+            "hidden"
+        );
+
+        otpInfo.classList.remove(
+            "hidden"
+        );
+
+        changeEmailButton.classList.remove(
+            "hidden"
+        );
+
+        otpInfo.textContent =
+            `We sent a verification code to ${email}.`;
+
+        authOtp.focus();
+    }
+);
+
+
+// ============================================================
+// VERIFY OTP
+// ============================================================
+
+otpForm.addEventListener(
+    "submit",
+    async (event) => {
+
+        event.preventDefault();
+
+        clearError(authError);
+
+        const email =
+            authEmail.value
+                .trim()
+                .toLowerCase();
+
+        const token =
+            authOtp.value
+                .trim();
+
+
+        if (!email) {
+
+            showError(
+                authError,
+                "Email is missing."
+            );
+
+            return;
+        }
+
+
+        if (!/^\d{6,8}$/.test(token)) {
+
+            showError(
+                authError,
+                "Enter the 6-digit verification code."
+            );
+
+            return;
+        }
+
+
+        const button =
+            otpForm.querySelector("button");
+
+        button.disabled = true;
+
+        button.textContent =
+            "Verifying...";
+
+
+        console.log(
+            "Verifying OTP..."
+        );
+
+
+        const {
+            data,
+            error
+        } = await client.auth.verifyOtp({
+
+            email,
+
+            token,
+
+            type: "email"
+
+        });
+
+
+        button.disabled = false;
+
+        button.textContent =
+            "Verify code";
+
+
+        if (error) {
+
+            console.error(
+                "OTP VERIFY ERROR:",
+                error
+            );
+
+            showError(
+                authError,
+                error.message
+            );
+
+            return;
+        }
+
+
+        if (!data.session) {
+
+            showError(
+                authError,
+                "Verification succeeded, but no session was created."
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "OTP verification successful."
+        );
+
+
         currentUser =
             data.user;
 
@@ -250,93 +442,18 @@ loginForm.addEventListener(
 
 
 // ============================================================
-// REGISTER
+// CHANGE EMAIL
 // ============================================================
 
-registerForm.addEventListener(
-    "submit",
-    async (event) => {
+changeEmailButton.addEventListener(
+    "click",
+    () => {
 
-        event.preventDefault();
+        clearError(authError);
 
-        clearError(registerError);
+        resetOTPForm();
 
-
-        const email =
-            registerEmail.value.trim();
-
-        const password =
-            registerPassword.value;
-
-        const confirmation =
-            registerPasswordConfirm.value;
-
-
-        if (password !== confirmation) {
-
-            showError(
-                registerError,
-                "Passwords do not match."
-            );
-
-            return;
-        }
-
-
-        if (password.length < 6) {
-
-            showError(
-                registerError,
-                "Password must be at least 6 characters."
-            );
-
-            return;
-        }
-
-
-        const {
-            data,
-            error
-        } = await client.auth.signUp({
-
-            email,
-
-            password
-        });
-
-
-        if (error) {
-
-            console.error(
-                "REGISTER ERROR:",
-                error
-            );
-
-            showError(
-                registerError,
-                error.message
-            );
-
-            return;
-        }
-
-
-        if (!data.user) {
-
-            showError(
-                registerError,
-                "Account created. Check your email to continue."
-            );
-
-            return;
-        }
-
-
-        currentUser =
-            data.user;
-
-
-        await initializeUser();
+        authEmail.focus();
     }
 );
 
@@ -397,13 +514,25 @@ async function initializeUser() {
     }
 
 
+    console.log(
+        "Initializing user:",
+        currentUser.id
+    );
+
+
     currentProfile =
         await loadProfile();
 
 
+    // No profile yet
+
     if (!currentProfile) {
 
         showProfileScreen();
+
+        profileUsername.value = "";
+
+        profileDisplayName.value = "";
 
         profileUsername.focus();
 
@@ -411,25 +540,17 @@ async function initializeUser() {
     }
 
 
-    /*
-     * The trigger creates a temporary profile:
-     *
-     * username:     user_XXXXXXXX
-     * display_name: New User
-     *
-     * If that's still present, send the user to
-     * profile setup.
-     */
+    // Existing incomplete profile
 
     if (
-        currentProfile.display_name ===
-        "New User"
+        !currentProfile.display_name ||
+        currentProfile.display_name === "New User"
     ) {
 
         showProfileScreen();
 
         profileUsername.value =
-            currentProfile.username;
+            currentProfile.username || "";
 
         profileDisplayName.value = "";
 
@@ -444,7 +565,7 @@ async function initializeUser() {
 
 
 // ============================================================
-// CREATE / UPDATE PROFILE
+// PROFILE UPDATE
 // ============================================================
 
 profileForm.addEventListener(
@@ -466,10 +587,6 @@ profileForm.addEventListener(
             profileDisplayName.value
                 .trim();
 
-
-        // ----------------------------------------------------
-        // Username validation
-        // ----------------------------------------------------
 
         if (
             !/^[a-z0-9_]{3,24}$/.test(
@@ -497,9 +614,14 @@ profileForm.addEventListener(
         }
 
 
-        // ----------------------------------------------------
-        // Update automatically-created profile
-        // ----------------------------------------------------
+        const button =
+            profileForm.querySelector("button");
+
+        button.disabled = true;
+
+        button.textContent =
+            "Saving...";
+
 
         const {
             data,
@@ -523,8 +645,13 @@ profileForm.addEventListener(
             )
 
             .select()
-
             .single();
+
+
+        button.disabled = false;
+
+        button.textContent =
+            "Continue";
 
 
         if (error) {
@@ -536,8 +663,7 @@ profileForm.addEventListener(
 
 
             if (
-                error.code ===
-                "23505"
+                error.code === "23505"
             ) {
 
                 showError(
@@ -568,38 +694,463 @@ profileForm.addEventListener(
 
 
 // ============================================================
-// SWITCH LOGIN / REGISTER
+// LOAD USERS
 // ============================================================
 
-showRegister.addEventListener(
-    "click",
+async function loadUsers() {
+
+    userList.innerHTML = `
+        <div class="sidebar-empty">
+            Loading users...
+        </div>
+    `;
+
+
+    const {
+        data,
+        error
+    } = await client
+
+        .from("profiles")
+
+        .select(
+            "id, username, display_name, avatar_url"
+        )
+
+        .neq(
+            "id",
+            currentUser.id
+        )
+
+        .order(
+            "display_name",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "USER LOAD ERROR:",
+            error
+        );
+
+
+        userList.innerHTML = `
+            <div class="sidebar-empty">
+                Failed to load users.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    allUsers =
+        data || [];
+
+
+    renderUsers(
+        allUsers
+    );
+}
+
+
+// ============================================================
+// RENDER USERS
+// ============================================================
+
+function renderUsers(users) {
+
+    userList.innerHTML = "";
+
+
+    if (users.length === 0) {
+
+        userList.innerHTML = `
+            <div class="sidebar-empty">
+                No users found.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    for (const user of users) {
+
+        const element =
+            document.createElement("button");
+
+
+        element.className =
+            "user-item";
+
+        element.type =
+            "button";
+
+        element.dataset.userId =
+            user.id;
+
+
+        element.innerHTML = `
+            <div class="user-avatar">
+                ${escapeHtml(
+                    getInitial(
+                        user.display_name
+                    )
+                )}
+            </div>
+
+            <div class="user-info">
+
+                <div class="user-display-name">
+                    ${escapeHtml(
+                        user.display_name
+                    )}
+                </div>
+
+                <div class="user-username">
+                    @${escapeHtml(
+                        user.username
+                    )}
+                </div>
+
+            </div>
+        `;
+
+
+        element.addEventListener(
+            "click",
+            () => {
+
+                openConversation(
+                    user
+                );
+            }
+        );
+
+
+        userList.appendChild(
+            element
+        );
+    }
+}
+
+
+// ============================================================
+// USER SEARCH
+// ============================================================
+
+userSearch.addEventListener(
+    "input",
     () => {
 
-        clearError(authError);
+        const query =
+            userSearch.value
+                .trim()
+                .toLowerCase();
 
-        showRegisterScreen();
+
+        if (!query) {
+
+            renderUsers(
+                allUsers
+            );
+
+            return;
+        }
+
+
+        const filtered =
+            allUsers.filter(
+                user => {
+
+                    const username =
+                        user.username
+                            ?.toLowerCase() || "";
+
+                    const displayName =
+                        user.display_name
+                            ?.toLowerCase() || "";
+
+
+                    return (
+                        username.includes(query) ||
+                        displayName.includes(query)
+                    );
+                }
+            );
+
+
+        renderUsers(
+            filtered
+        );
     }
 );
 
 
-showLogin.addEventListener(
-    "click",
-    () => {
+// ============================================================
+// GET INITIAL
+// ============================================================
 
-        clearError(registerError);
+function getInitial(name) {
 
-        showLoginScreen();
+    if (!name) {
+        return "?";
     }
-);
+
+
+    return name
+        .trim()
+        .charAt(0)
+        .toUpperCase();
+}
 
 
 // ============================================================
-// MESSAGE UI
+// ESCAPE HTML
+// ============================================================
+
+function escapeHtml(value) {
+
+    const div =
+        document.createElement("div");
+
+
+    div.textContent =
+        value ?? "";
+
+
+    return div.innerHTML;
+}
+
+
+// ============================================================
+// OPEN CONVERSATION
+// ============================================================
+
+async function openConversation(user) {
+
+    if (!user) {
+        return;
+    }
+
+
+    console.log(
+        "Opening conversation with:",
+        user
+    );
+
+
+    status.textContent =
+        "Opening conversation...";
+
+
+    conversationUser.innerHTML = `
+        <div class="conversation-avatar">
+            ${escapeHtml(
+                getInitial(
+                    user.display_name
+                )
+            )}
+        </div>
+
+        <div>
+
+            <div class="conversation-name">
+                ${escapeHtml(
+                    user.display_name
+                )}
+            </div>
+
+            <div class="conversation-username">
+                @${escapeHtml(
+                    user.username
+                )}
+            </div>
+
+        </div>
+    `;
+
+
+    const {
+        data,
+        error
+    } = await client.rpc(
+        "get_or_create_conversation",
+        {
+            target_user_id:
+                user.id
+        }
+    );
+
+
+    if (error) {
+
+        console.error(
+            "CONVERSATION ERROR:",
+            error
+        );
+
+
+        status.textContent =
+            "Conversation error";
+
+
+        messages.innerHTML = `
+            <div class="empty">
+                Failed to open conversation.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    currentConversationId =
+        data;
+
+    currentConversationUser =
+        user;
+
+
+    await stopRealtime();
+
+
+    await loadConversationMessages();
+
+
+    await startConversationRealtime();
+
+
+    messageInput.disabled =
+        false;
+
+
+    messageForm
+        .querySelector("button")
+        .disabled = false;
+
+
+    messageInput.placeholder =
+        `Message ${user.display_name}...`;
+
+
+    messageInput.focus();
+
+
+    status.textContent =
+        "Connected";
+}
+
+
+// ============================================================
+// LOAD CONVERSATION MESSAGES
+// ============================================================
+
+async function loadConversationMessages() {
+
+    if (!currentConversationId) {
+        return;
+    }
+
+
+    displayedMessageIds.clear();
+
+
+    messages.innerHTML = `
+        <div class="empty">
+            Loading messages...
+        </div>
+    `;
+
+
+    const {
+        data,
+        error
+    } = await client
+
+        .from("messages")
+
+        .select(`
+            id,
+            user_id,
+            conversation_id,
+            content,
+            created_at,
+            profile:profiles (
+                username,
+                display_name,
+                avatar_url
+            )
+        `)
+
+        .eq(
+            "conversation_id",
+            currentConversationId
+        )
+
+        .order(
+            "created_at",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "MESSAGE LOAD ERROR:",
+            error
+        );
+
+
+        messages.innerHTML = `
+            <div class="empty">
+                Failed to load messages.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    messages.innerHTML = "";
+
+
+    if (
+        !data ||
+        data.length === 0
+    ) {
+
+        messages.innerHTML = `
+            <div class="empty">
+                No messages yet. Say hello!
+            </div>
+        `;
+
+        return;
+    }
+
+
+    for (const message of data) {
+
+        addMessage(
+            message
+        );
+    }
+}
+
+
+// ============================================================
+// ADD MESSAGE
 // ============================================================
 
 function addMessage(message) {
-
-    // Don't display the same message twice.
 
     if (
         message.id &&
@@ -643,12 +1194,15 @@ function addMessage(message) {
             currentUser.id
     ) {
 
-        element.classList.add("own");
+        element.classList.add(
+            "own"
+        );
     }
 
 
     const username =
         document.createElement("div");
+
 
     username.className =
         "username";
@@ -656,13 +1210,12 @@ function addMessage(message) {
 
     username.textContent =
         message.profile?.display_name ||
-        message.profile?.username ||
-        message.username ||
         "User";
 
 
     const content =
         document.createElement("div");
+
 
     content.className =
         "content";
@@ -672,97 +1225,22 @@ function addMessage(message) {
         message.content;
 
 
-    element.appendChild(username);
+    element.appendChild(
+        username
+    );
 
-    element.appendChild(content);
+    element.appendChild(
+        content
+    );
 
-    messages.appendChild(element);
+
+    messages.appendChild(
+        element
+    );
 
 
     messages.scrollTop =
         messages.scrollHeight;
-}
-
-
-// ============================================================
-// LOAD MESSAGES
-// ============================================================
-
-async function loadMessages() {
-
-    console.log(
-        "Loading messages..."
-    );
-
-
-    displayedMessageIds.clear();
-
-
-    const {
-        data,
-        error
-    } = await client
-
-        .from("messages")
-
-        .select(`
-            id,
-            user_id,
-            content,
-            created_at,
-            username,
-            profile:profiles (
-                username,
-                display_name
-            )
-        `)
-
-        .order(
-            "created_at",
-            {
-                ascending: true
-            }
-        );
-
-
-    if (error) {
-
-        console.error(
-            "MESSAGE LOAD ERROR:",
-            error
-        );
-
-        status.textContent =
-            "Database error";
-
-        return;
-    }
-
-
-    messages.innerHTML = "";
-
-
-    if (
-        !data ||
-        data.length === 0
-    ) {
-
-        messages.innerHTML = `
-            <div class="empty">
-                No messages yet.
-            </div>
-        `;
-
-        return;
-    }
-
-
-    for (
-        const message of data
-    ) {
-
-        addMessage(message);
-    }
 }
 
 
@@ -772,7 +1250,11 @@ async function loadMessages() {
 
 async function sendMessage(content) {
 
-    if (!currentUser) {
+    if (
+        !currentUser ||
+        !currentConversationId
+    ) {
+
         return false;
     }
 
@@ -788,6 +1270,9 @@ async function sendMessage(content) {
             user_id:
                 currentUser.id,
 
+            conversation_id:
+                currentConversationId,
+
             content
 
         });
@@ -800,8 +1285,10 @@ async function sendMessage(content) {
             error
         );
 
+
         status.textContent =
             "Send failed";
+
 
         return false;
     }
@@ -826,7 +1313,11 @@ messageForm.addEventListener(
             messageInput.value.trim();
 
 
-        if (!content) {
+        if (
+            !content ||
+            !currentConversationId
+        ) {
+
             return;
         }
 
@@ -860,110 +1351,106 @@ messageForm.addEventListener(
 
 
 // ============================================================
-// REALTIME
+// CONVERSATION REALTIME
 // ============================================================
 
-async function startRealtime() {
+async function startConversationRealtime() {
 
     await stopRealtime();
 
 
+    if (!currentConversationId) {
+        return;
+    }
+
+
+    const channelName =
+        `conversation:${currentConversationId}`;
+
+
     realtimeChannel =
         client
+            .channel(channelName)
 
-        .channel(
-            "messages-channel"
-        )
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "messages",
+                    filter:
+                        `conversation_id=eq.${currentConversationId}`
+                },
 
-        .on(
+                async (payload) => {
 
-            "postgres_changes",
-
-            {
-
-                event: "INSERT",
-
-                schema: "public",
-
-                table: "messages"
-
-            },
-
-            async (payload) => {
-
-                console.log(
-                    "REALTIME EVENT:",
-                    payload
-                );
-
-
-                /*
-                 * Fetch the profile belonging to the
-                 * sender of this message.
-                 */
-
-                const {
-                    data: profile,
-                    error
-                } = await client
-
-                    .from("profiles")
-
-                    .select(
-                        "username, display_name"
-                    )
-
-                    .eq(
-                        "id",
-                        payload.new.user_id
-                    )
-
-                    .single();
-
-
-                if (error) {
-
-                    console.error(
-                        "REALTIME PROFILE ERROR:",
-                        error
+                    console.log(
+                        "CONVERSATION REALTIME:",
+                        payload
                     );
+
+
+                    if (
+                        payload.new.conversation_id !==
+                        currentConversationId
+                    ) {
+
+                        return;
+                    }
+
+
+                    const {
+                        data: profile
+                    } = await client
+
+                        .from("profiles")
+
+                        .select(
+                            "username, display_name, avatar_url"
+                        )
+
+                        .eq(
+                            "id",
+                            payload.new.user_id
+                        )
+
+                        .single();
+
+
+                    addMessage({
+
+                        ...payload.new,
+
+                        profile
+
+                    });
                 }
+            )
+
+            .subscribe(
+                (subscriptionStatus) => {
+
+                    console.log(
+                        "REALTIME STATUS:",
+                        subscriptionStatus
+                    );
 
 
-                addMessage({
+                    if (
+                        subscriptionStatus ===
+                        "SUBSCRIBED"
+                    ) {
 
-                    ...payload.new,
+                        status.textContent =
+                            "Connected";
 
-                    profile
-                });
-            }
+                    } else {
 
-        )
-
-        .subscribe(
-            (subscriptionStatus) => {
-
-                console.log(
-                    "REALTIME STATUS:",
-                    subscriptionStatus
-                );
-
-
-                if (
-                    subscriptionStatus ===
-                    "SUBSCRIBED"
-                ) {
-
-                    status.textContent =
-                        "Connected";
-
-                } else {
-
-                    status.textContent =
-                        subscriptionStatus;
+                        status.textContent =
+                            subscriptionStatus;
+                    }
                 }
-            }
-        );
+            );
 }
 
 
@@ -983,7 +1470,8 @@ async function stopRealtime() {
     );
 
 
-    realtimeChannel = null;
+    realtimeChannel =
+        null;
 }
 
 
@@ -1009,12 +1497,30 @@ async function startChat() {
     showChatScreen();
 
 
-    await loadMessages();
-
-    await startRealtime();
+    await loadUsers();
 
 
-    messageInput.focus();
+    messages.innerHTML = `
+        <div class="empty">
+            Select a user to start a conversation.
+        </div>
+    `;
+
+
+    messageInput.disabled =
+        true;
+
+
+    messageForm
+        .querySelector("button")
+        .disabled = true;
+
+
+    await stopRealtime();
+
+
+    status.textContent =
+        "Ready";
 }
 
 
@@ -1028,6 +1534,7 @@ logoutButton.addEventListener(
 
         await stopRealtime();
 
+
         await client.auth.signOut();
 
 
@@ -1035,13 +1542,18 @@ logoutButton.addEventListener(
 
         currentProfile = null;
 
+        currentConversationId = null;
+
+        currentConversationUser = null;
+
+        allUsers = [];
 
         displayedMessageIds.clear();
 
 
         messages.innerHTML = `
             <div class="empty">
-                No messages yet.
+                Select a user to start a conversation.
             </div>
         `;
 
@@ -1070,6 +1582,7 @@ async function checkSession() {
             error
         );
 
+
         showLoginScreen();
 
         return;
@@ -1080,6 +1593,7 @@ async function checkSession() {
 
         currentUser =
             data.session.user;
+
 
         await initializeUser();
 
@@ -1114,6 +1628,7 @@ client.auth.onAuthStateChange(
             currentUser =
                 session.user;
 
+
             await initializeUser();
         }
 
@@ -1124,7 +1639,15 @@ client.auth.onAuthStateChange(
 
             currentProfile = null;
 
+            currentConversationId =
+                null;
+
+            currentConversationUser =
+                null;
+
+
             await stopRealtime();
+
 
             showLoginScreen();
         }

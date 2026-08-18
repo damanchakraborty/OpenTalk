@@ -1,62 +1,306 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>ChudChat</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
 </head>
 
 <body>
 
-    <main class="chat">
 
-        <header class="chat-header">
-            <div>
-                <h1>ChudChat</h1>
-                <span id="status">Connecting...</span>
-            </div>
-        </header>
+<!-- ===================================================== -->
+<!-- LOGIN -->
+<!-- ===================================================== -->
 
-        <section id="messages" class="messages">
-            <div class="empty">
-                Loading messages...
-            </div>
-        </section>
+<section
+    id="auth-screen"
+    class="auth-screen"
+>
 
-        <form id="message-form" class="message-form">
+    <div class="auth-box">
+
+        <h1>ChudChat</h1>
+
+        <p class="auth-subtitle">
+            Chat with people.
+        </p>
+
+        <div
+            id="auth-error"
+            class="auth-error"
+        ></div>
+
+        <form
+            id="login-form"
+            class="auth-form"
+        >
 
             <input
-                id="username"
-                type="text"
-                placeholder="Username"
-                maxlength="32"
-                autocomplete="off"
+                id="login-email"
+                type="email"
+                placeholder="Email"
+                autocomplete="email"
                 required
             >
 
             <input
-                id="message"
-                type="text"
-                placeholder="Type a message..."
-                maxlength="500"
-                autocomplete="off"
+                id="login-password"
+                type="password"
+                placeholder="Password"
+                autocomplete="current-password"
                 required
             >
 
-            <button type="submit">➤</button>
+            <button type="submit">
+                Login
+            </button>
 
         </form>
 
-    </main>
+        <div class="auth-switch">
 
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+            <span>
+                Don't have an account?
+            </span>
 
-    <!-- Our application -->
-    <script src="app.js"></script>
+            <button
+                id="show-register"
+                type="button"
+            >
+                Register
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ===================================================== -->
+<!-- REGISTER -->
+<!-- ===================================================== -->
+
+<section
+    id="register-screen"
+    class="auth-screen hidden"
+>
+
+    <div class="auth-box">
+
+        <h1>ChudChat</h1>
+
+        <p class="auth-subtitle">
+            Create your account.
+        </p>
+
+        <div
+            id="register-error"
+            class="auth-error"
+        ></div>
+
+        <form
+            id="register-form"
+            class="auth-form"
+        >
+
+            <input
+                id="register-email"
+                type="email"
+                placeholder="Email"
+                autocomplete="email"
+                required
+            >
+
+            <input
+                id="register-password"
+                type="password"
+                placeholder="Password"
+                autocomplete="new-password"
+                required
+            >
+
+            <input
+                id="register-password-confirm"
+                type="password"
+                placeholder="Confirm password"
+                autocomplete="new-password"
+                required
+            >
+
+            <button type="submit">
+                Create account
+            </button>
+
+        </form>
+
+        <div class="auth-switch">
+
+            <span>
+                Already have an account?
+            </span>
+
+            <button
+                id="show-login"
+                type="button"
+            >
+                Login
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ===================================================== -->
+<!-- PROFILE SETUP -->
+<!-- ===================================================== -->
+
+<section
+    id="profile-screen"
+    class="auth-screen hidden"
+>
+
+    <div class="auth-box">
+
+        <h1>Welcome!</h1>
+
+        <p class="auth-subtitle">
+            Choose your ChudChat username.
+        </p>
+
+        <div
+            id="profile-error"
+            class="auth-error"
+        ></div>
+
+        <form
+            id="profile-form"
+            class="auth-form"
+        >
+
+            <input
+                id="profile-username"
+                type="text"
+                placeholder="Username"
+                minlength="3"
+                maxlength="24"
+                autocomplete="off"
+                required
+            >
+
+            <input
+                id="profile-display-name"
+                type="text"
+                placeholder="Display name"
+                maxlength="40"
+                autocomplete="off"
+                required
+            >
+
+            <button type="submit">
+                Continue
+            </button>
+
+        </form>
+
+    </div>
+
+</section>
+
+
+<!-- ===================================================== -->
+<!-- CHAT -->
+<!-- ===================================================== -->
+
+<main
+    id="chat-screen"
+    class="chat hidden"
+>
+
+    <header class="chat-header">
+
+        <div>
+
+            <h1>ChudChat</h1>
+
+            <span id="status">
+                Connecting...
+            </span>
+
+        </div>
+
+        <div class="user-controls">
+
+            <span id="current-user"></span>
+
+            <button
+                id="logout-button"
+                type="button"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <section
+        id="messages"
+        class="messages"
+    >
+
+        <div class="empty">
+            Loading messages...
+        </div>
+
+    </section>
+
+
+    <form
+        id="message-form"
+        class="message-form"
+    >
+
+        <input
+            id="message"
+            type="text"
+            placeholder="Type a message..."
+            maxlength="500"
+            autocomplete="off"
+            required
+        >
+
+        <button type="submit">
+            ➤
+        </button>
+
+    </form>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
 
 </body>
+
 </html>

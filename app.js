@@ -58,7 +58,10 @@ let initializingUser = false;
 // ============================================================
 // DOM
 // ============================================================
-
+const globalChatButton =
+    document.getElementById(
+        "global-chat-button"
+    );
 // Screens
 
 const authScreen =
@@ -163,7 +166,155 @@ const logoutButton =
         "logout-button"
     );
 
+// Mobile
 
+const userSidebar =
+    document.getElementById(
+        "user-sidebar"
+    );
+
+const mobileChatSelector =
+    document.getElementById(
+        "mobile-chat-selector"
+    );
+
+const mobileSidebarBackdrop =
+    document.getElementById(
+        "mobile-sidebar-backdrop"
+    );
+    
+// ============================================================
+// MOBILE SIDEBAR
+// ============================================================
+if (globalChatButton) {
+
+    globalChatButton.addEventListener(
+        "click",
+        () => {
+
+            closeMobileSidebar();
+
+            globalChatButton.classList.add(
+                "active"
+            );
+        }
+    );
+}
+
+
+function isMobile() {
+
+    return window.matchMedia(
+        "(max-width: 700px)"
+    ).matches;
+}
+
+
+function openMobileSidebar() {
+
+    if (
+        !isMobile() ||
+        !userSidebar
+    ) {
+        return;
+    }
+
+
+    userSidebar.classList.add(
+        "mobile-open"
+    );
+
+
+    if (mobileSidebarBackdrop) {
+
+        mobileSidebarBackdrop.classList.add(
+            "mobile-visible"
+        );
+    }
+
+
+    if (mobileChatSelector) {
+
+        mobileChatSelector.setAttribute(
+            "aria-expanded",
+            "true"
+        );
+    }
+}
+
+
+function closeMobileSidebar() {
+
+    if (!userSidebar) {
+        return;
+    }
+
+
+    userSidebar.classList.remove(
+        "mobile-open"
+    );
+
+
+    if (mobileSidebarBackdrop) {
+
+        mobileSidebarBackdrop.classList.remove(
+            "mobile-visible"
+        );
+    }
+
+
+    if (mobileChatSelector) {
+
+        mobileChatSelector.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+    }
+}
+
+
+function toggleMobileSidebar() {
+
+    if (!isMobile()) {
+        return;
+    }
+
+
+    if (
+        userSidebar &&
+        userSidebar.classList.contains(
+            "mobile-open"
+        )
+    ) {
+
+        closeMobileSidebar();
+
+    } else {
+
+        openMobileSidebar();
+    }
+}
+
+// ============================================================
+// MOBILE SIDEBAR EVENTS
+// ============================================================
+
+if (mobileChatSelector) {
+
+    mobileChatSelector.addEventListener(
+        "click",
+        toggleMobileSidebar
+    );
+}
+
+
+if (mobileSidebarBackdrop) {
+
+    mobileSidebarBackdrop.addEventListener(
+        "click",
+        closeMobileSidebar
+    );
+}
 // ============================================================
 // SCREEN MANAGEMENT
 // ============================================================
@@ -1362,14 +1513,16 @@ function renderUsers(
 
 
         element.addEventListener(
-            "click",
-            () => {
+    "click",
+    () => {
 
-                openConversation(
-                    user
-                );
-            }
+        closeMobileSidebar();
+
+        openConversation(
+            user
         );
+    }
+);
 
 
         userList.appendChild(

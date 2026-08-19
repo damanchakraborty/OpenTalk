@@ -1318,7 +1318,10 @@ if (profileForm) {
             // USERNAME ALREADY EXISTS
             // ------------------------------------------------
 
-            if (existingUsername) {
+            if (
+    existingUsername &&
+    existingUsername.id !== currentUser.id
+) {
 
                 button.disabled = false;
                 button.textContent = "Continue";
@@ -1336,30 +1339,57 @@ if (profileForm) {
 
 
             // ------------------------------------------------
-            // CREATE PROFILE
-            // ------------------------------------------------
+// CREATE OR UPDATE PROFILE
+// ------------------------------------------------
 
-            button.textContent = "Saving...";
+button.textContent = "Saving...";
 
+let data;
+let error;
 
-            const {
-                data,
-                error
-            } =
-                await client
-                    .from("profiles")
-                    .insert({
-                        id:
-                            currentUser.id,
+if (currentProfile) {
 
-                        username,
+    // --------------------------------------------
+    // EXISTING PROFILE
+    // --------------------------------------------
 
-                        display_name:
-                            displayName
-                    })
-                    .select()
-                    .single();
+    const result =
+        await client
+            .from("profiles")
+            .update({
+                username,
+                display_name: displayName
+            })
+            .eq(
+                "id",
+                currentUser.id
+            )
+            .select()
+            .single();
 
+    data = result.data;
+    error = result.error;
+
+} else {
+
+    // --------------------------------------------
+    // BRAND NEW PROFILE
+    // --------------------------------------------
+
+    const result =
+        await client
+            .from("profiles")
+            .insert({
+                id: currentUser.id,
+                username,
+                display_name: displayName
+            })
+            .select()
+            .single();
+
+    data = result.data;
+    error = result.error;
+}
 
             // ------------------------------------------------
             // HANDLE INSERT ERROR

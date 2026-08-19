@@ -22,8 +22,8 @@
 <body>
 
 
-<<!-- ===================================================== -->
-<!-- EMAIL OTP AUTH -->
+<!-- ===================================================== -->
+<!-- GOOGLE AUTH -->
 <!-- ===================================================== -->
 
 <section
@@ -36,8 +36,9 @@
         <h1>ChudChat</h1>
 
         <p class="auth-subtitle">
-            Sign in with your email.
+            Chat with people.
         </p>
+
 
         <div
             id="auth-error"
@@ -45,71 +46,28 @@
         ></div>
 
 
-        <!-- EMAIL -->
-
-        <form
-            id="email-form"
-            class="auth-form"
-        >
-
-            <input
-                id="auth-email"
-                type="email"
-                placeholder="Email"
-                autocomplete="email"
-                required
-            >
-
-            <button type="submit">
-                Send verification code
-            </button>
-
-        </form>
-
-
-        <!-- OTP -->
-
-        <form
-            id="otp-form"
-            class="auth-form hidden"
-        >
-
-            <input
-                id="auth-otp"
-                type="text"
-                inputmode="numeric"
-                autocomplete="one-time-code"
-                placeholder="6-digit code"
-                maxlength="8"
-                required
-            >
-
-            <button type="submit">
-                Verify code
-            </button>
-
-        </form>
-
-
-        <p
-            id="otp-info"
-            class="auth-subtitle hidden"
-        >
-            We sent a verification code to your email.
-        </p>
-
-
         <button
-            id="change-email"
+            id="google-login"
+            class="google-login"
             type="button"
-            class="hidden"
         >
-            Use a different email
+
+            <span class="google-icon">
+                G
+            </span>
+
+            <span class="google-login-text">
+                Continue with Google
+            </span>
+
         </button>
 
     </div>
 
 </section>
+
+
+
 <!-- ===================================================== -->
 <!-- PROFILE SETUP -->
 <!-- ===================================================== -->
@@ -124,13 +82,15 @@
         <h1>Welcome!</h1>
 
         <p class="auth-subtitle">
-            Choose your ChudChat username.
+            One last thing — set up your ChudChat profile.
         </p>
+
 
         <div
             id="profile-error"
             class="auth-error"
         ></div>
+
 
         <form
             id="profile-form"
@@ -144,8 +104,10 @@
                 minlength="3"
                 maxlength="24"
                 autocomplete="off"
+                spellcheck="false"
                 required
             >
+
 
             <input
                 id="profile-display-name"
@@ -155,6 +117,7 @@
                 autocomplete="off"
                 required
             >
+
 
             <button type="submit">
                 Continue
@@ -167,6 +130,7 @@
 </section>
 
 
+
 <!-- ===================================================== -->
 <!-- CHAT -->
 <!-- ===================================================== -->
@@ -175,11 +139,6 @@
     id="chat-screen"
     class="chat hidden"
 >
-
-
-    <!-- ================================================= -->
-    <!-- CHAT HEADER -->
-    <!-- ================================================= -->
 
     <header class="chat-header">
 
@@ -210,16 +169,11 @@
     </header>
 
 
-    <!-- ================================================= -->
-    <!-- CHAT BODY -->
-    <!-- ================================================= -->
 
     <div class="chat-body">
 
 
-        <!-- ============================================= -->
         <!-- USER SIDEBAR -->
-        <!-- ============================================= -->
 
         <aside
             id="user-sidebar"
@@ -259,18 +213,11 @@
         </aside>
 
 
-        <!-- ============================================= -->
+
         <!-- CONVERSATION -->
-        <!-- ============================================= -->
 
-        <section
-            class="conversation"
-        >
+        <section class="conversation">
 
-
-            <!-- ========================================= -->
-            <!-- CONVERSATION HEADER -->
-            <!-- ========================================= -->
 
             <header
                 id="conversation-header"
@@ -281,17 +228,16 @@
                     id="conversation-user"
                     class="conversation-user"
                 >
+
                     <span class="conversation-placeholder">
                         Select a user to start chatting
                     </span>
+
                 </div>
 
             </header>
 
 
-            <!-- ========================================= -->
-            <!-- MESSAGES -->
-            <!-- ========================================= -->
 
             <section
                 id="messages"
@@ -305,9 +251,6 @@
             </section>
 
 
-            <!-- ========================================= -->
-            <!-- MESSAGE INPUT -->
-            <!-- ========================================= -->
 
             <form
                 id="message-form"
@@ -324,6 +267,7 @@
                     required
                 >
 
+
                 <button
                     type="submit"
                     disabled
@@ -336,14 +280,14 @@
 
         </section>
 
-
     </div>
 
 </main>
 
 
+
 <!-- ===================================================== -->
-<!-- SCRIPTS -->
+<!-- SUPABASE -->
 <!-- ===================================================== -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

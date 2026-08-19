@@ -16,6 +16,23 @@ const client =
 
 
 // ============================================================
+// CONFIG
+// ============================================================
+
+// IMPORTANT:
+// Google/Supabase OAuth always returns to auth-callback.html.
+//
+// The callback page handles the OAuth response and then
+// notifies this page that login succeeded.
+
+const REDIRECT_URL =
+    new URL(
+        "auth-callback.html",
+        window.location.href
+    ).href;
+
+
+// ============================================================
 // STATE
 // ============================================================
 
@@ -29,7 +46,13 @@ let realtimeChannel = null;
 
 let allUsers = [];
 
-const displayedMessageIds = new Set();
+const displayedMessageIds =
+    new Set();
+
+let googleAuthPopup = null;
+let googleAuthTimeout = null;
+
+let initializingUser = false;
 
 
 // ============================================================
@@ -39,85 +62,106 @@ const displayedMessageIds = new Set();
 // Screens
 
 const authScreen =
-    document.getElementById("auth-screen");
+    document.getElementById(
+        "auth-screen"
+    );
 
 const profileScreen =
-    document.getElementById("profile-screen");
+    document.getElementById(
+        "profile-screen"
+    );
 
 const chatScreen =
-    document.getElementById("chat-screen");
+    document.getElementById(
+        "chat-screen"
+    );
 
 
-// OTP authentication
+// Authentication
 
-const emailForm =
-    document.getElementById("email-form");
-
-const otpForm =
-    document.getElementById("otp-form");
-
-const authEmail =
-    document.getElementById("auth-email");
-
-const authOtp =
-    document.getElementById("auth-otp");
-
-const otpInfo =
-    document.getElementById("otp-info");
-
-const changeEmailButton =
-    document.getElementById("change-email");
+const googleLogin =
+    document.getElementById(
+        "google-login"
+    );
 
 
 // Profile
 
 const profileForm =
-    document.getElementById("profile-form");
+    document.getElementById(
+        "profile-form"
+    );
 
 const profileUsername =
-    document.getElementById("profile-username");
+    document.getElementById(
+        "profile-username"
+    );
 
 const profileDisplayName =
-    document.getElementById("profile-display-name");
+    document.getElementById(
+        "profile-display-name"
+    );
 
 
 // Errors
 
 const authError =
-    document.getElementById("auth-error");
+    document.getElementById(
+        "auth-error"
+    );
 
 const profileError =
-    document.getElementById("profile-error");
+    document.getElementById(
+        "profile-error"
+    );
 
 
 // Chat
 
 const status =
-    document.getElementById("status");
+    document.getElementById(
+        "status"
+    );
 
 const currentUserElement =
-    document.getElementById("current-user");
+    document.getElementById(
+        "current-user"
+    );
 
 const userSearch =
-    document.getElementById("user-search");
+    document.getElementById(
+        "user-search"
+    );
 
 const userList =
-    document.getElementById("user-list");
+    document.getElementById(
+        "user-list"
+    );
 
 const conversationUser =
-    document.getElementById("conversation-user");
+    document.getElementById(
+        "conversation-user"
+    );
 
 const messages =
-    document.getElementById("messages");
+    document.getElementById(
+        "messages"
+    );
 
 const messageForm =
-    document.getElementById("message-form");
+    document.getElementById(
+        "message-form"
+    );
 
 const messageInput =
-    document.getElementById("message");
+    document.getElementById(
+        "message"
+    );
 
 const logoutButton =
-    document.getElementById("logout-button");
+    document.getElementById(
+        "logout-button"
+    );
 
 
 // ============================================================
@@ -126,14 +170,23 @@ const logoutButton =
 
 function hideAllScreens() {
 
-    if (authScreen)
-        authScreen.classList.add("hidden");
+    if (authScreen) {
+        authScreen.classList.add(
+            "hidden"
+        );
+    }
 
-    if (profileScreen)
-        profileScreen.classList.add("hidden");
+    if (profileScreen) {
+        profileScreen.classList.add(
+            "hidden"
+        );
+    }
 
-    if (chatScreen)
-        chatScreen.classList.add("hidden");
+    if (chatScreen) {
+        chatScreen.classList.add(
+            "hidden"
+        );
+    }
 }
 
 
@@ -141,9 +194,13 @@ function showLoginScreen() {
 
     hideAllScreens();
 
-    authScreen.classList.remove("hidden");
+    if (authScreen) {
+        authScreen.classList.remove(
+            "hidden"
+        );
+    }
 
-    resetOTPForm();
+    resetGoogleButton();
 }
 
 
@@ -151,7 +208,11 @@ function showProfileScreen() {
 
     hideAllScreens();
 
-    profileScreen.classList.remove("hidden");
+    if (profileScreen) {
+        profileScreen.classList.remove(
+            "hidden"
+        );
+    }
 }
 
 
@@ -159,7 +220,11 @@ function showChatScreen() {
 
     hideAllScreens();
 
-    chatScreen.classList.remove("hidden");
+    if (chatScreen) {
+        chatScreen.classList.remove(
+            "hidden"
+        );
+    }
 }
 
 
@@ -167,293 +232,587 @@ function showChatScreen() {
 // ERROR HANDLING
 // ============================================================
 
-function showError(element, message) {
+function showError(
+    element,
+    message
+) {
 
-    if (!element)
+    if (!element) {
         return;
+    }
 
-    element.textContent = message;
+    element.textContent =
+        message;
 
-    element.style.display = "block";
+    element.style.display =
+        "block";
 }
 
 
-function clearError(element) {
+function clearError(
+    element
+) {
 
-    if (!element)
+    if (!element) {
         return;
+    }
 
-    element.textContent = "";
+    element.textContent =
+        "";
 
-    element.style.display = "none";
+    element.style.display =
+        "none";
 }
 
 
 // ============================================================
-// OTP FORM RESET
+// GOOGLE BUTTON
 // ============================================================
 
-function resetOTPForm() {
+function resetGoogleButton() {
 
-    clearError(authError);
+    if (!googleLogin) {
+        return;
+    }
 
-    if (emailForm)
-        emailForm.classList.remove("hidden");
+    googleLogin.disabled =
+        false;
 
-    if (otpForm)
-        otpForm.classList.add("hidden");
+    googleLogin.innerHTML = `
+        <span class="google-icon">
+            G
+        </span>
 
-    if (otpInfo)
-        otpInfo.classList.add("hidden");
+        <span>
+            Continue with Google
+        </span>
+    `;
+}
 
-    if (changeEmailButton)
-        changeEmailButton.classList.add("hidden");
 
-    if (authOtp)
-        authOtp.value = "";
+function setGoogleButtonLoading() {
+
+    if (!googleLogin) {
+        return;
+    }
+
+    googleLogin.disabled =
+        true;
+
+    googleLogin.innerHTML = `
+        <span class="google-icon">
+            G
+        </span>
+
+        <span>
+            Opening Google...
+        </span>
+    `;
 }
 
 
 // ============================================================
-// SEND OTP
+// GOOGLE AUTH POPUP
 // ============================================================
 
-emailForm.addEventListener(
-    "submit",
-    async (event) => {
+async function startGoogleLogin() {
 
-        event.preventDefault();
+    if (!googleLogin) {
+        return;
+    }
 
-        clearError(authError);
-
-        const email =
-            authEmail.value
-                .trim()
-                .toLowerCase();
+    clearError(
+        authError
+    );
 
 
-        if (!email) {
+    // Already opening
 
-            showError(
-                authError,
-                "Please enter your email."
-            );
+    if (
+        googleAuthPopup &&
+        !googleAuthPopup.closed
+    ) {
 
-            return;
-        }
+        googleAuthPopup.focus();
 
-
-        const button =
-            emailForm.querySelector("button");
-
-        button.disabled = true;
-
-        button.textContent =
-            "Sending...";
+        return;
+    }
 
 
-        console.log(
-            "Sending OTP to:",
-            email
+    setGoogleButtonLoading();
+
+
+    console.log(
+        "Starting Google popup login..."
+    );
+
+
+    // --------------------------------------------------------
+    // OPEN BLANK POPUP IMMEDIATELY
+    // --------------------------------------------------------
+
+    const width = 500;
+    const height = 650;
+
+    const left =
+        window.screenX +
+        (
+            window.outerWidth -
+            width
+        ) / 2;
+
+    const top =
+        window.screenY +
+        (
+            window.outerHeight -
+            height
+        ) / 2;
+
+
+    googleAuthPopup =
+        window.open(
+            "about:blank",
+            "chudchat_google_login",
+            `
+                width=${width},
+                height=${height},
+                left=${left},
+                top=${top},
+                popup=yes,
+                resizable=yes,
+                scrollbars=yes
+            `
         );
 
 
-        const {
-            error
-        } = await client.auth.signInWithOtp({
+    if (!googleAuthPopup) {
 
-            email,
+        console.error(
+            "Google popup was blocked."
+        );
+
+        showError(
+            authError,
+            "Google login popup was blocked. Please allow popups for ChudChat."
+        );
+
+        resetGoogleButton();
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // GET GOOGLE OAUTH URL
+    // --------------------------------------------------------
+
+    const {
+        data,
+        error
+    } =
+        await client.auth.signInWithOAuth({
+
+            provider:
+                "google",
 
             options: {
-                shouldCreateUser: true
-            }
 
+                redirectTo:
+                    REDIRECT_URL,
+
+                skipBrowserRedirect:
+                    true
+            }
         });
 
 
-        button.disabled = false;
+    if (error) {
 
-        button.textContent =
-            "Send verification code";
+        console.error(
+            "GOOGLE OAUTH URL ERROR:",
+            error
+        );
+
+        closeGooglePopup();
+
+        showError(
+            authError,
+            error.message
+        );
+
+        resetGoogleButton();
+
+        return;
+    }
 
 
-        if (error) {
+    if (
+        !data ||
+        !data.url
+    ) {
 
-            console.error(
-                "OTP SEND ERROR:",
+        console.error(
+            "No OAuth URL returned."
+        );
+
+        closeGooglePopup();
+
+        showError(
+            authError,
+            "Failed to start Google authentication."
+        );
+
+        resetGoogleButton();
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // NAVIGATE POPUP TO GOOGLE
+    // --------------------------------------------------------
+
+    try {
+
+        googleAuthPopup.location.href =
+            data.url;
+
+        googleAuthPopup.focus();
+
+    } catch (error) {
+
+        console.error(
+            "POPUP NAVIGATION ERROR:",
+            error
+        );
+
+        closeGooglePopup();
+
+        showError(
+            authError,
+            "Failed to open Google authentication."
+        );
+
+        resetGoogleButton();
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // WATCH POPUP
+    // --------------------------------------------------------
+
+    startGooglePopupWatcher();
+}
+
+
+// ============================================================
+// POPUP WATCHER
+// ============================================================
+
+function startGooglePopupWatcher() {
+
+    clearInterval(
+        googleAuthTimeout
+    );
+
+
+    googleAuthTimeout =
+        setInterval(
+            async () => {
+
+                // ------------------------------------------------
+                // POPUP CLOSED
+                // ------------------------------------------------
+
+                if (
+                    googleAuthPopup &&
+                    googleAuthPopup.closed
+                ) {
+
+                    console.log(
+                        "Google popup closed."
+                    );
+
+                    clearInterval(
+                        googleAuthTimeout
+                    );
+
+                    googleAuthTimeout =
+                        null;
+
+                    googleAuthPopup =
+                        null;
+
+
+                    if (currentUser) {
+                        return;
+                    }
+
+
+                    showError(
+                        authError,
+                        "Google sign-in was cancelled."
+                    );
+
+                    resetGoogleButton();
+
+                    return;
+                }
+
+
+                // ------------------------------------------------
+                // CHECK SESSION
+                // ------------------------------------------------
+
+                const {
+                    data,
+                    error
+                } =
+                    await client.auth.getSession();
+
+
+                if (error) {
+
+                    console.error(
+                        "POPUP SESSION CHECK ERROR:",
+                        error
+                    );
+
+                    return;
+                }
+
+
+                if (
+                    data &&
+                    data.session &&
+                    !currentUser
+                ) {
+
+                    console.log(
+                        "Google authentication successful."
+                    );
+
+                    currentUser =
+                        data.session.user;
+
+                    clearInterval(
+                        googleAuthTimeout
+                    );
+
+                    googleAuthTimeout =
+                        null;
+
+                    closeGooglePopup();
+
+                    await initializeUser();
+                }
+
+            },
+            500
+        );
+}
+
+
+// ============================================================
+// CLOSE GOOGLE POPUP
+// ============================================================
+
+function closeGooglePopup() {
+
+    if (googleAuthTimeout) {
+
+        clearInterval(
+            googleAuthTimeout
+        );
+
+        googleAuthTimeout =
+            null;
+    }
+
+
+    if (
+        googleAuthPopup &&
+        !googleAuthPopup.closed
+    ) {
+
+        try {
+
+            googleAuthPopup.close();
+
+        } catch (error) {
+
+            console.warn(
+                "Could not close Google popup:",
                 error
             );
-
-            showError(
-                authError,
-                error.message
-            );
-
-            return;
         }
-
-
-        console.log(
-            "OTP sent successfully."
-        );
-
-
-        emailForm.classList.add(
-            "hidden"
-        );
-
-        otpForm.classList.remove(
-            "hidden"
-        );
-
-        otpInfo.classList.remove(
-            "hidden"
-        );
-
-        changeEmailButton.classList.remove(
-            "hidden"
-        );
-
-        otpInfo.textContent =
-            `We sent a verification code to ${email}.`;
-
-        authOtp.focus();
     }
-);
+
+
+    googleAuthPopup =
+        null;
+}
 
 
 // ============================================================
-// VERIFY OTP
+// GOOGLE LOGIN BUTTON
 // ============================================================
 
-otpForm.addEventListener(
-    "submit",
+if (googleLogin) {
+
+    googleLogin.addEventListener(
+        "click",
+        startGoogleLogin
+    );
+}
+
+
+// ============================================================
+// MAIN WINDOW ← POPUP COMMUNICATION
+// ============================================================
+//
+// auth-callback.html sends one of:
+//
+// CHUDCHAT_AUTH_SUCCESS
+// CHUDCHAT_AUTH_ERROR
+//
+// The main index.html receives that message and initializes
+// the actual chat UI.
+// ============================================================
+
+window.addEventListener(
+    "message",
     async (event) => {
 
-        event.preventDefault();
+        // --------------------------------------------------------
+        // SECURITY
+        // --------------------------------------------------------
 
-        clearError(authError);
-
-        const email =
-            authEmail.value
-                .trim()
-                .toLowerCase();
-
-        const token =
-            authOtp.value
-                .trim();
+        if (
+            event.origin !==
+            window.location.origin
+        ) {
+            return;
+        }
 
 
-        if (!email) {
+        if (
+            !event.data ||
+            typeof event.data.type !==
+                "string"
+        ) {
+            return;
+        }
 
-            showError(
-                authError,
-                "Email is missing."
+
+        // --------------------------------------------------------
+        // AUTH SUCCESS
+        // --------------------------------------------------------
+
+        if (
+            event.data.type ===
+            "CHUDCHAT_AUTH_SUCCESS"
+        ) {
+
+            console.log(
+                "Received successful Google login from popup."
             );
+
+
+            closeGooglePopup();
+
+
+            const {
+                data,
+                error
+            } =
+                await client.auth.getSession();
+
+
+            if (error) {
+
+                console.error(
+                    "SESSION LOAD ERROR:",
+                    error
+                );
+
+                showError(
+                    authError,
+                    error.message
+                );
+
+                resetGoogleButton();
+
+                return;
+            }
+
+
+            if (
+                !data ||
+                !data.session
+            ) {
+
+                console.error(
+                    "Popup reported success but no session exists."
+                );
+
+                showError(
+                    authError,
+                    "Authentication completed, but no session was found."
+                );
+
+                resetGoogleButton();
+
+                return;
+            }
+
+
+            currentUser =
+                data.session.user;
+
+
+            clearError(
+                authError
+            );
+
+
+            await initializeUser();
 
             return;
         }
 
 
-        if (!/^\d{6,8}$/.test(token)) {
+        // --------------------------------------------------------
+        // AUTH ERROR
+        // --------------------------------------------------------
 
-            showError(
-                authError,
-                "Enter the 6-digit verification code."
-            );
-
-            return;
-        }
-
-
-        const button =
-            otpForm.querySelector("button");
-
-        button.disabled = true;
-
-        button.textContent =
-            "Verifying...";
-
-
-        console.log(
-            "Verifying OTP..."
-        );
-
-
-        const {
-            data,
-            error
-        } = await client.auth.verifyOtp({
-
-            email,
-
-            token,
-
-            type: "email"
-
-        });
-
-
-        button.disabled = false;
-
-        button.textContent =
-            "Verify code";
-
-
-        if (error) {
+        if (
+            event.data.type ===
+            "CHUDCHAT_AUTH_ERROR"
+        ) {
 
             console.error(
-                "OTP VERIFY ERROR:",
-                error
+                "Google authentication failed:",
+                event.data.message
             );
+
+
+            closeGooglePopup();
+
 
             showError(
                 authError,
-                error.message
+                event.data.message ||
+                "Google sign-in failed."
             );
+
+
+            resetGoogleButton();
 
             return;
         }
-
-
-        if (!data.session) {
-
-            showError(
-                authError,
-                "Verification succeeded, but no session was created."
-            );
-
-            return;
-        }
-
-
-        console.log(
-            "OTP verification successful."
-        );
-
-
-        currentUser =
-            data.user;
-
-
-        await initializeUser();
-    }
-);
-
-
-// ============================================================
-// CHANGE EMAIL
-// ============================================================
-
-changeEmailButton.addEventListener(
-    "click",
-    () => {
-
-        clearError(authError);
-
-        resetOTPForm();
-
-        authEmail.focus();
     }
 );
 
@@ -469,23 +828,26 @@ async function loadProfile() {
     }
 
 
+    console.log(
+        "Loading profile for:",
+        currentUser.id
+    );
+
+
     const {
         data,
         error
-    } = await client
-
-        .from("profiles")
-
-        .select(
-            "id, username, display_name, avatar_url, created_at"
-        )
-
-        .eq(
-            "id",
-            currentUser.id
-        )
-
-        .maybeSingle();
+    } =
+        await client
+            .from("profiles")
+            .select(
+                "id, username, display_name, avatar_url, created_at"
+            )
+            .eq(
+                "id",
+                currentUser.id
+            )
+            .maybeSingle();
 
 
     if (error) {
@@ -509,188 +871,345 @@ async function loadProfile() {
 
 async function initializeUser() {
 
-    if (!currentUser) {
-        return;
-    }
-
-
-    console.log(
-        "Initializing user:",
-        currentUser.id
-    );
-
-
-    currentProfile =
-        await loadProfile();
-
-
-    // No profile yet
-
-    if (!currentProfile) {
-
-        showProfileScreen();
-
-        profileUsername.value = "";
-
-        profileDisplayName.value = "";
-
-        profileUsername.focus();
-
-        return;
-    }
-
-
-    // Existing incomplete profile
-
     if (
-        !currentProfile.display_name ||
-        currentProfile.display_name === "New User"
+        !currentUser ||
+        initializingUser
     ) {
-
-        showProfileScreen();
-
-        profileUsername.value =
-            currentProfile.username || "";
-
-        profileDisplayName.value = "";
-
-        profileUsername.focus();
-
         return;
     }
 
 
-    await startChat();
+    initializingUser =
+        true;
+
+
+    try {
+
+        console.log(
+            "Initializing user:",
+            currentUser
+        );
+
+
+        currentProfile =
+            await loadProfile();
+
+
+        // ----------------------------------------------------
+        // NEW USER
+        // ----------------------------------------------------
+
+        if (!currentProfile) {
+
+            console.log(
+                "No profile found."
+            );
+
+
+            showProfileScreen();
+
+
+            clearError(
+                profileError
+            );
+
+
+            const metadata =
+                currentUser.user_metadata ||
+                {};
+
+
+            const googleName =
+                metadata.full_name ||
+                metadata.name ||
+                "";
+
+
+            const googleUsername =
+                createUsernameSuggestion(
+                    metadata
+                );
+
+
+            profileUsername.value =
+                googleUsername;
+
+
+            profileDisplayName.value =
+                googleName;
+
+
+            profileUsername.focus();
+
+            return;
+        }
+
+
+        // ----------------------------------------------------
+        // EXISTING INCOMPLETE PROFILE
+        // ----------------------------------------------------
+
+        if (
+            !currentProfile.username ||
+            !currentProfile.display_name ||
+            currentProfile.display_name ===
+                "New User"
+        ) {
+
+            showProfileScreen();
+
+
+            clearError(
+                profileError
+            );
+
+
+            profileUsername.value =
+                currentProfile.username ||
+                "";
+
+
+            profileDisplayName.value =
+                currentProfile.display_name ===
+                    "New User"
+                    ? ""
+                    :
+                    (
+                        currentProfile.display_name ||
+                        ""
+                    );
+
+
+            profileUsername.focus();
+
+            return;
+        }
+
+
+        // ----------------------------------------------------
+        // EXISTING USER
+        // ----------------------------------------------------
+
+        await startChat();
+
+    } finally {
+
+        initializingUser =
+            false;
+    }
 }
 
 
 // ============================================================
-// PROFILE UPDATE
+// CREATE USERNAME SUGGESTION
 // ============================================================
 
-profileForm.addEventListener(
-    "submit",
-    async (event) => {
+function createUsernameSuggestion(
+    metadata
+) {
 
-        event.preventDefault();
-
-        clearError(profileError);
-
-
-        const username =
-            profileUsername.value
-                .trim()
-                .toLowerCase();
+    let value =
+        metadata.user_name ||
+        metadata.preferred_username ||
+        metadata.full_name ||
+        metadata.name ||
+        "";
 
 
-        const displayName =
-            profileDisplayName.value
-                .trim();
-
-
-        if (
-            !/^[a-z0-9_]{3,24}$/.test(
-                username
-            )
-        ) {
-
-            showError(
-                profileError,
-                "Username must be 3-24 characters and contain only letters, numbers, and underscores."
+    value =
+        value
+            .toLowerCase()
+            .replace(
+                /[^a-z0-9_]/g,
+                ""
             );
 
-            return;
-        }
+
+    if (!value) {
+        value = "user";
+    }
 
 
-        if (!displayName) {
+    if (value.length < 3) {
+        value += "user";
+    }
 
-            showError(
-                profileError,
-                "Please enter a display name."
+
+    value =
+        value.substring(
+            0,
+            24
+        );
+
+
+    return value;
+}
+
+
+// ============================================================
+// PROFILE SETUP
+// ============================================================
+
+if (profileForm) {
+
+    profileForm.addEventListener(
+        "submit",
+        async (event) => {
+
+            event.preventDefault();
+
+
+            clearError(
+                profileError
             );
 
-            return;
-        }
+
+            if (!currentUser) {
+
+                showError(
+                    profileError,
+                    "You are not logged in."
+                );
+
+                return;
+            }
 
 
-        const button =
-            profileForm.querySelector("button");
-
-        button.disabled = true;
-
-        button.textContent =
-            "Saving...";
+            const username =
+                profileUsername.value
+                    .trim()
+                    .toLowerCase();
 
 
-        const {
-            data,
-            error
-        } = await client
-
-            .from("profiles")
-
-            .update({
-
-                username,
-
-                display_name:
-                    displayName
-
-            })
-
-            .eq(
-                "id",
-                currentUser.id
-            )
-
-            .select()
-            .single();
+            const displayName =
+                profileDisplayName.value
+                    .trim();
 
 
-        button.disabled = false;
-
-        button.textContent =
-            "Continue";
-
-
-        if (error) {
-
-            console.error(
-                "PROFILE UPDATE ERROR:",
-                error
-            );
-
+            // ------------------------------------------------
+            // VALIDATE USERNAME
+            // ------------------------------------------------
 
             if (
-                error.code === "23505"
+                !/^[a-z0-9_]{3,24}$/.test(
+                    username
+                )
             ) {
 
                 showError(
                     profileError,
-                    "That username is already taken."
+                    "Username must be 3-24 characters and contain only letters, numbers, and underscores."
                 );
 
-            } else {
-
-                showError(
-                    profileError,
-                    error.message
-                );
+                return;
             }
 
 
-            return;
+            // ------------------------------------------------
+            // VALIDATE DISPLAY NAME
+            // ------------------------------------------------
+
+            if (!displayName) {
+
+                showError(
+                    profileError,
+                    "Please enter a display name."
+                );
+
+                return;
+            }
+
+
+            const button =
+                profileForm.querySelector(
+                    "button"
+                );
+
+
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Saving...";
+
+
+            const {
+                data,
+                error
+            } =
+                await client
+                    .from("profiles")
+                    .insert({
+                        id:
+                            currentUser.id,
+
+                        username,
+
+                        display_name:
+                            displayName
+                    })
+                    .select()
+                    .single();
+
+
+            if (error) {
+
+                console.error(
+                    "PROFILE CREATE ERROR:",
+                    error
+                );
+
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Continue";
+
+
+                if (
+                    error.code ===
+                    "23505"
+                ) {
+
+                    showError(
+                        profileError,
+                        "That username is already taken."
+                    );
+
+                } else {
+
+                    showError(
+                        profileError,
+                        error.message
+                    );
+                }
+
+                return;
+            }
+
+
+            currentProfile =
+                data;
+
+
+            console.log(
+                "Profile created:",
+                currentProfile
+            );
+
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "Continue";
+
+
+            await startChat();
         }
-
-
-        currentProfile =
-            data;
-
-
-        await startChat();
-    }
-);
+    );
+}
 
 
 // ============================================================
@@ -698,6 +1217,14 @@ profileForm.addEventListener(
 // ============================================================
 
 async function loadUsers() {
+
+    if (
+        !userList ||
+        !currentUser
+    ) {
+        return;
+    }
+
 
     userList.innerHTML = `
         <div class="sidebar-empty">
@@ -709,25 +1236,22 @@ async function loadUsers() {
     const {
         data,
         error
-    } = await client
-
-        .from("profiles")
-
-        .select(
-            "id, username, display_name, avatar_url"
-        )
-
-        .neq(
-            "id",
-            currentUser.id
-        )
-
-        .order(
-            "display_name",
-            {
-                ascending: true
-            }
-        );
+    } =
+        await client
+            .from("profiles")
+            .select(
+                "id, username, display_name, avatar_url"
+            )
+            .neq(
+                "id",
+                currentUser.id
+            )
+            .order(
+                "display_name",
+                {
+                    ascending: true
+                }
+            );
 
 
     if (error) {
@@ -762,12 +1286,23 @@ async function loadUsers() {
 // RENDER USERS
 // ============================================================
 
-function renderUsers(users) {
+function renderUsers(
+    users
+) {
 
-    userList.innerHTML = "";
+    if (!userList) {
+        return;
+    }
 
 
-    if (users.length === 0) {
+    userList.innerHTML =
+        "";
+
+
+    if (
+        !users ||
+        users.length === 0
+    ) {
 
         userList.innerHTML = `
             <div class="sidebar-empty">
@@ -779,10 +1314,14 @@ function renderUsers(users) {
     }
 
 
-    for (const user of users) {
+    for (
+        const user of users
+    ) {
 
         const element =
-            document.createElement("button");
+            document.createElement(
+                "button"
+            );
 
 
         element.className =
@@ -844,59 +1383,70 @@ function renderUsers(users) {
 // USER SEARCH
 // ============================================================
 
-userSearch.addEventListener(
-    "input",
-    () => {
+if (userSearch) {
 
-        const query =
-            userSearch.value
-                .trim()
-                .toLowerCase();
+    userSearch.addEventListener(
+        "input",
+        () => {
+
+            const query =
+                userSearch.value
+                    .trim()
+                    .toLowerCase();
 
 
-        if (!query) {
+            if (!query) {
+
+                renderUsers(
+                    allUsers
+                );
+
+                return;
+            }
+
+
+            const filtered =
+                allUsers.filter(
+                    user => {
+
+                        const username =
+                            user.username
+                                ?.toLowerCase() ||
+                            "";
+
+                        const displayName =
+                            user.display_name
+                                ?.toLowerCase() ||
+                            "";
+
+
+                        return (
+                            username.includes(
+                                query
+                            ) ||
+                            displayName.includes(
+                                query
+                            )
+                        );
+                    }
+                );
+
 
             renderUsers(
-                allUsers
+                filtered
             );
-
-            return;
         }
-
-
-        const filtered =
-            allUsers.filter(
-                user => {
-
-                    const username =
-                        user.username
-                            ?.toLowerCase() || "";
-
-                    const displayName =
-                        user.display_name
-                            ?.toLowerCase() || "";
-
-
-                    return (
-                        username.includes(query) ||
-                        displayName.includes(query)
-                    );
-                }
-            );
-
-
-        renderUsers(
-            filtered
-        );
-    }
-);
+    );
+}
 
 
 // ============================================================
 // GET INITIAL
 // ============================================================
 
-function getInitial(name) {
+function getInitial(
+    name
+) {
 
     if (!name) {
         return "?";
@@ -914,10 +1464,14 @@ function getInitial(name) {
 // ESCAPE HTML
 // ============================================================
 
-function escapeHtml(value) {
+function escapeHtml(
+    value
+) {
 
     const div =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     div.textContent =
@@ -932,9 +1486,14 @@ function escapeHtml(value) {
 // OPEN CONVERSATION
 // ============================================================
 
-async function openConversation(user) {
+async function openConversation(
+    user
+) {
 
-    if (!user) {
+    if (
+        !user ||
+        !currentUser
+    ) {
         return;
     }
 
@@ -949,43 +1508,47 @@ async function openConversation(user) {
         "Opening conversation...";
 
 
-    conversationUser.innerHTML = `
-        <div class="conversation-avatar">
-            ${escapeHtml(
-                getInitial(
-                    user.display_name
-                )
-            )}
-        </div>
+    if (conversationUser) {
 
-        <div>
-
-            <div class="conversation-name">
+        conversationUser.innerHTML = `
+            <div class="conversation-avatar">
                 ${escapeHtml(
-                    user.display_name
+                    getInitial(
+                        user.display_name
+                    )
                 )}
             </div>
 
-            <div class="conversation-username">
-                @${escapeHtml(
-                    user.username
-                )}
-            </div>
+            <div>
 
-        </div>
-    `;
+                <div class="conversation-name">
+                    ${escapeHtml(
+                        user.display_name
+                    )}
+                </div>
+
+                <div class="conversation-username">
+                    @${escapeHtml(
+                        user.username
+                    )}
+                </div>
+
+            </div>
+        `;
+    }
 
 
     const {
         data,
         error
-    } = await client.rpc(
-        "get_or_create_conversation",
-        {
-            target_user_id:
-                user.id
-        }
-    );
+    } =
+        await client.rpc(
+            "get_or_create_conversation",
+            {
+                target_user_id:
+                    user.id
+            }
+        );
 
 
     if (error) {
@@ -1019,9 +1582,7 @@ async function openConversation(user) {
 
     await stopRealtime();
 
-
     await loadConversationMessages();
-
 
     await startConversationRealtime();
 
@@ -1031,8 +1592,11 @@ async function openConversation(user) {
 
 
     messageForm
-        .querySelector("button")
-        .disabled = false;
+        .querySelector(
+            "button"
+        )
+        .disabled =
+        false;
 
 
     messageInput.placeholder =
@@ -1071,34 +1635,31 @@ async function loadConversationMessages() {
     const {
         data,
         error
-    } = await client
-
-        .from("messages")
-
-        .select(`
-            id,
-            user_id,
-            conversation_id,
-            content,
-            created_at,
-            profile:profiles (
-                username,
-                display_name,
-                avatar_url
+    } =
+        await client
+            .from("messages")
+            .select(`
+                id,
+                user_id,
+                conversation_id,
+                content,
+                created_at,
+                profile:profiles (
+                    username,
+                    display_name,
+                    avatar_url
+                )
+            `)
+            .eq(
+                "conversation_id",
+                currentConversationId
             )
-        `)
-
-        .eq(
-            "conversation_id",
-            currentConversationId
-        )
-
-        .order(
-            "created_at",
-            {
-                ascending: true
-            }
-        );
+            .order(
+                "created_at",
+                {
+                    ascending: true
+                }
+            );
 
 
     if (error) {
@@ -1119,7 +1680,8 @@ async function loadConversationMessages() {
     }
 
 
-    messages.innerHTML = "";
+    messages.innerHTML =
+        "";
 
 
     if (
@@ -1137,7 +1699,9 @@ async function loadConversationMessages() {
     }
 
 
-    for (const message of data) {
+    for (
+        const message of data
+    ) {
 
         addMessage(
             message
@@ -1150,7 +1714,9 @@ async function loadConversationMessages() {
 // ADD MESSAGE
 // ============================================================
 
-function addMessage(message) {
+function addMessage(
+    message
+) {
 
     if (
         message.id &&
@@ -1158,7 +1724,6 @@ function addMessage(message) {
             message.id
         )
     ) {
-
         return;
     }
 
@@ -1172,7 +1737,9 @@ function addMessage(message) {
 
 
     const empty =
-        messages.querySelector(".empty");
+        messages.querySelector(
+            ".empty"
+        );
 
 
     if (empty) {
@@ -1181,7 +1748,9 @@ function addMessage(message) {
 
 
     const element =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     element.className =
@@ -1201,7 +1770,9 @@ function addMessage(message) {
 
 
     const username =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     username.className =
@@ -1214,7 +1785,9 @@ function addMessage(message) {
 
 
     const content =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     content.className =
@@ -1248,34 +1821,32 @@ function addMessage(message) {
 // SEND MESSAGE
 // ============================================================
 
-async function sendMessage(content) {
+async function sendMessage(
+    content
+) {
 
     if (
         !currentUser ||
         !currentConversationId
     ) {
-
         return false;
     }
 
 
     const {
         error
-    } = await client
+    } =
+        await client
+            .from("messages")
+            .insert({
+                user_id:
+                    currentUser.id,
 
-        .from("messages")
+                conversation_id:
+                    currentConversationId,
 
-        .insert({
-
-            user_id:
-                currentUser.id,
-
-            conversation_id:
-                currentConversationId,
-
-            content
-
-        });
+                content
+            });
 
 
     if (error) {
@@ -1302,52 +1873,58 @@ async function sendMessage(content) {
 // MESSAGE FORM
 // ============================================================
 
-messageForm.addEventListener(
-    "submit",
-    async (event) => {
+if (messageForm) {
 
-        event.preventDefault();
+    messageForm.addEventListener(
+        "submit",
+        async (event) => {
 
-
-        const content =
-            messageInput.value.trim();
+            event.preventDefault();
 
 
-        if (
-            !content ||
-            !currentConversationId
-        ) {
+            const content =
+                messageInput.value
+                    .trim();
 
-            return;
+
+            if (
+                !content ||
+                !currentConversationId
+            ) {
+                return;
+            }
+
+
+            const button =
+                messageForm.querySelector(
+                    "button"
+                );
+
+
+            button.disabled =
+                true;
+
+
+            const success =
+                await sendMessage(
+                    content
+                );
+
+
+            if (success) {
+
+                messageInput.value =
+                    "";
+
+                messageInput.focus();
+            }
+
+
+            button.disabled =
+                false;
         }
-
-
-        const button =
-            messageForm.querySelector(
-                "button"
-            );
-
-
-        button.disabled = true;
-
-
-        const success =
-            await sendMessage(
-                content
-            );
-
-
-        if (success) {
-
-            messageInput.value = "";
-
-            messageInput.focus();
-        }
-
-
-        button.disabled = false;
-    }
-);
+    );
+}
 
 
 // ============================================================
@@ -1370,19 +1947,27 @@ async function startConversationRealtime() {
 
     realtimeChannel =
         client
-            .channel(channelName)
-
+            .channel(
+                channelName
+            )
             .on(
                 "postgres_changes",
                 {
-                    event: "INSERT",
-                    schema: "public",
-                    table: "messages",
+                    event:
+                        "INSERT",
+
+                    schema:
+                        "public",
+
+                    table:
+                        "messages",
+
                     filter:
                         `conversation_id=eq.${currentConversationId}`
                 },
-
-                async (payload) => {
+                async (
+                    payload
+                ) => {
 
                     console.log(
                         "CONVERSATION REALTIME:",
@@ -1391,30 +1976,29 @@ async function startConversationRealtime() {
 
 
                     if (
-                        payload.new.conversation_id !==
+                        payload.new
+                            .conversation_id !==
                         currentConversationId
                     ) {
-
                         return;
                     }
 
 
                     const {
                         data: profile
-                    } = await client
-
-                        .from("profiles")
-
-                        .select(
-                            "username, display_name, avatar_url"
-                        )
-
-                        .eq(
-                            "id",
-                            payload.new.user_id
-                        )
-
-                        .single();
+                    } =
+                        await client
+                            .from(
+                                "profiles"
+                            )
+                            .select(
+                                "username, display_name, avatar_url"
+                            )
+                            .eq(
+                                "id",
+                                payload.new.user_id
+                            )
+                            .single();
 
 
                     addMessage({
@@ -1422,13 +2006,13 @@ async function startConversationRealtime() {
                         ...payload.new,
 
                         profile
-
                     });
                 }
             )
-
             .subscribe(
-                (subscriptionStatus) => {
+                (
+                    subscriptionStatus
+                ) => {
 
                     console.log(
                         "REALTIME STATUS:",
@@ -1485,7 +2069,6 @@ async function startChat() {
         !currentUser ||
         !currentProfile
     ) {
-
         return;
     }
 
@@ -1512,8 +2095,11 @@ async function startChat() {
 
 
     messageForm
-        .querySelector("button")
-        .disabled = true;
+        .querySelector(
+            "button"
+        )
+        .disabled =
+        true;
 
 
     await stopRealtime();
@@ -1528,39 +2114,66 @@ async function startChat() {
 // LOGOUT
 // ============================================================
 
-logoutButton.addEventListener(
-    "click",
-    async () => {
+if (logoutButton) {
 
-        await stopRealtime();
+    logoutButton.addEventListener(
+        "click",
+        async () => {
 
+            await stopRealtime();
 
-        await client.auth.signOut();
-
-
-        currentUser = null;
-
-        currentProfile = null;
-
-        currentConversationId = null;
-
-        currentConversationUser = null;
-
-        allUsers = [];
-
-        displayedMessageIds.clear();
+            closeGooglePopup();
 
 
-        messages.innerHTML = `
-            <div class="empty">
-                Select a user to start a conversation.
-            </div>
-        `;
+            const {
+                error
+            } =
+                await client.auth.signOut();
 
 
-        showLoginScreen();
-    }
-);
+            if (error) {
+
+                console.error(
+                    "LOGOUT ERROR:",
+                    error
+                );
+
+                return;
+            }
+
+
+            currentUser =
+                null;
+
+            currentProfile =
+                null;
+
+            currentConversationId =
+                null;
+
+            currentConversationUser =
+                null;
+
+            allUsers =
+                [];
+
+            displayedMessageIds.clear();
+
+
+            if (messages) {
+
+                messages.innerHTML = `
+                    <div class="empty">
+                        Select a user to start a conversation.
+                    </div>
+                `;
+            }
+
+
+            showLoginScreen();
+        }
+    );
+}
 
 
 // ============================================================
@@ -1569,10 +2182,16 @@ logoutButton.addEventListener(
 
 async function checkSession() {
 
+    console.log(
+        "Checking session..."
+    );
+
+
     const {
         data,
         error
-    } = await client.auth.getSession();
+    } =
+        await client.auth.getSession();
 
 
     if (error) {
@@ -1582,14 +2201,21 @@ async function checkSession() {
             error
         );
 
-
         showLoginScreen();
 
         return;
     }
 
 
-    if (data.session) {
+    if (
+        data &&
+        data.session
+    ) {
+
+        console.log(
+            "Existing session found."
+        );
+
 
         currentUser =
             data.session.user;
@@ -1598,6 +2224,10 @@ async function checkSession() {
         await initializeUser();
 
     } else {
+
+        console.log(
+            "No active session."
+        );
 
         showLoginScreen();
     }
@@ -1609,7 +2239,7 @@ async function checkSession() {
 // ============================================================
 
 client.auth.onAuthStateChange(
-    async (
+    (
         event,
         session
     ) => {
@@ -1620,6 +2250,10 @@ client.auth.onAuthStateChange(
         );
 
 
+        // ----------------------------------------------------
+        // NORMAL WINDOW LOGIN
+        // ----------------------------------------------------
+
         if (
             session &&
             !currentUser
@@ -1629,15 +2263,31 @@ client.auth.onAuthStateChange(
                 session.user;
 
 
-            await initializeUser();
+            closeGooglePopup();
+
+
+            setTimeout(
+                () => {
+
+                    initializeUser();
+
+                },
+                0
+            );
         }
 
 
+        // ----------------------------------------------------
+        // LOGOUT
+        // ----------------------------------------------------
+
         if (!session) {
 
-            currentUser = null;
+            currentUser =
+                null;
 
-            currentProfile = null;
+            currentProfile =
+                null;
 
             currentConversationId =
                 null;
@@ -1646,7 +2296,10 @@ client.auth.onAuthStateChange(
                 null;
 
 
-            await stopRealtime();
+            closeGooglePopup();
+
+
+            stopRealtime();
 
 
             showLoginScreen();
@@ -1656,7 +2309,11 @@ client.auth.onAuthStateChange(
 
 
 // ============================================================
-// START
+// START APPLICATION
 // ============================================================
+
+console.log(
+    "Starting ChudChat..."
+);
 
 checkSession();

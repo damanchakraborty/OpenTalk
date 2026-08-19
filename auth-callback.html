@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>ChudChat</title>
+
+    <style>
+
+        html,
+        body {
+
+            margin: 0;
+            padding: 0;
+
+            width: 100%;
+            height: 100%;
+
+            background: #0b0712;
+
+            color: #e9e5f5;
+
+            font-family:
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+        }
+
+
+        body {
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+        }
+
+
+        .message {
+
+            text-align: center;
+
+            opacity: 0.75;
+
+            font-size: 14px;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="message">
+        Completing Google sign-in...
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+
+        const SUPABASE_URL =
+            "https://vkelkgabycpxojybguvj.supabase.co";
+
+        const SUPABASE_KEY =
+            "sb_publishable_LntMHz6esPpIJszjXzzAzw_W-FVSljU";
+
+
+        const client =
+            window.supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_KEY
+            );
+
+
+        async function finishAuthentication() {
+
+            try {
+
+                /*
+                 * Supabase processes the OAuth response here.
+                 *
+                 * If the OAuth flow returned a code,
+                 * exchange it for a session.
+                 */
+
+                const params =
+                    new URLSearchParams(
+                        window.location.search
+                    );
+
+
+                const code =
+                    params.get("code");
+
+
+                if (code) {
+
+                    const {
+                        error
+                    } =
+                        await client.auth.exchangeCodeForSession(
+                            code
+                        );
+
+
+                    if (error) {
+
+                        throw error;
+
+                    }
+
+                }
+
+
+                /*
+                 * Make sure the session actually exists.
+                 */
+
+                const {
+                    data,
+                    error
+                } =
+                    await client.auth.getSession();
+
+
+                if (error) {
+
+                    throw error;
+
+                }
+
+
+                if (!data.session) {
+
+                    throw new Error(
+                        "Google authentication did not create a session."
+                    );
+
+                }
+
+
+                /*
+                 * Tell the original ChudChat tab
+                 * that authentication succeeded.
+                 */
+
+                if (
+                    window.opener &&
+                    !window.opener.closed
+                ) {
+
+                    window.opener.postMessage(
+                        {
+                            type: "CHUDCHAT_AUTH_SUCCESS"
+                        },
+                        window.location.origin
+                    );
+
+                }
+
+
+                /*
+                 * Give postMessage a moment to reach
+                 * the original window, then close popup.
+                 */
+
+                setTimeout(
+                    () => {
+                        window.close();
+                    },
+                    150
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "AUTH CALLBACK ERROR:",
+                    error
+                );
+
+
+                /*
+                 * Tell the original window that
+                 * authentication failed.
+                 */
+
+                if (
+                    window.opener &&
+                    !window.opener.closed
+                ) {
+
+                    window.opener.postMessage(
+                        {
+                            type: "CHUDCHAT_AUTH_ERROR",
+                            message:
+                                error.message ||
+                                "Google authentication failed."
+                        },
+                        window.location.origin
+                    );
+
+                }
+
+
+                document.querySelector(
+                    ".message"
+                ).textContent =
+                    "Google sign-in failed. You can close this window.";
+
+            }
+
+        }
+
+
+        finishAuthentication();
+
+    </script>
+
+</body>
+
+</html>

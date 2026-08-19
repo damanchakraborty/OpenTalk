@@ -1209,11 +1209,7 @@ if (profileForm) {
 
             event.preventDefault();
 
-
-            clearError(
-                profileError
-            );
-
+            clearError(profileError);
 
             if (!currentUser) {
 
@@ -1226,11 +1222,14 @@ if (profileForm) {
             }
 
 
+            // ------------------------------------------------
+            // GET VALUES
+            // ------------------------------------------------
+
             const username =
                 profileUsername.value
                     .trim()
                     .toLowerCase();
-
 
             const displayName =
                 profileDisplayName.value
@@ -1277,11 +1276,70 @@ if (profileForm) {
                 );
 
 
-            button.disabled =
-                true;
+            button.disabled = true;
+            button.textContent = "Checking...";
 
-            button.textContent =
-                "Saving...";
+
+            // ------------------------------------------------
+            // CHECK IF USERNAME EXISTS
+            // ------------------------------------------------
+
+            const {
+                data: existingUsername,
+                error: usernameCheckError
+            } =
+                await client
+                    .from("profiles")
+                    .select("id")
+                    .eq("username", username)
+                    .maybeSingle();
+
+
+            if (usernameCheckError) {
+
+                console.error(
+                    "USERNAME CHECK ERROR:",
+                    usernameCheckError
+                );
+
+                button.disabled = false;
+                button.textContent = "Continue";
+
+                showError(
+                    profileError,
+                    "Could not check username. Please try again."
+                );
+
+                return;
+            }
+
+
+            // ------------------------------------------------
+            // USERNAME ALREADY EXISTS
+            // ------------------------------------------------
+
+            if (existingUsername) {
+
+                button.disabled = false;
+                button.textContent = "Continue";
+
+                showError(
+                    profileError,
+                    "That username is already taken. Please choose another one."
+                );
+
+                profileUsername.focus();
+                profileUsername.select();
+
+                return;
+            }
+
+
+            // ------------------------------------------------
+            // CREATE PROFILE
+            // ------------------------------------------------
+
+            button.textContent = "Saving...";
 
 
             const {
@@ -1303,6 +1361,10 @@ if (profileForm) {
                     .single();
 
 
+            // ------------------------------------------------
+            // HANDLE INSERT ERROR
+            // ------------------------------------------------
+
             if (error) {
 
                 console.error(
@@ -1311,34 +1373,67 @@ if (profileForm) {
                 );
 
 
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    "Continue";
+                button.disabled = false;
+                button.textContent = "Continue";
 
 
+                // Username collision
                 if (
-                    error.code ===
-                    "23505"
+                    error.code === "23505" &&
+                    (
+                        error.constraint
+                            ?.toLowerCase()
+                            .includes("username") ||
+                        error.message
+                            ?.toLowerCase()
+                            .includes("username")
+                    )
                 ) {
 
                     showError(
                         profileError,
-                        "That username is already taken."
+                        "That username was just taken. Please choose another one."
                     );
 
-                } else {
+                    profileUsername.focus();
+                    profileUsername.select();
+
+                    return;
+                }
+
+
+                // Profile already exists
+                if (
+                    error.code === "23505"
+                ) {
+
+                    console.error(
+                        "Unique constraint violation:",
+                        error.constraint
+                    );
 
                     showError(
                         profileError,
-                        error.message
+                        "Your profile already exists. Please refresh the page."
                     );
+
+                    return;
                 }
+
+
+                showError(
+                    profileError,
+                    error.message ||
+                    "Failed to create your profile."
+                );
 
                 return;
             }
 
+
+            // ------------------------------------------------
+            // SUCCESS
+            // ------------------------------------------------
 
             currentProfile =
                 data;
@@ -1350,11 +1445,8 @@ if (profileForm) {
             );
 
 
-            button.disabled =
-                false;
-
-            button.textContent =
-                "Continue";
+            button.disabled = false;
+            button.textContent = "Continue";
 
 
             await startChat();

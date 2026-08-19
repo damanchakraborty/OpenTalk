@@ -626,7 +626,90 @@ input {
         inset 3px 0 0 var(--accent2);
 }
 
+/* ============================================================
+   GLOBAL CHAT
+   ============================================================ */
 
+.global-chat-item {
+    margin: 4px 6px 6px;
+
+    width: calc(100% - 12px);
+
+    border: 1px solid var(--line);
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 79, 179, 0.055),
+            rgba(114, 133, 255, 0.035)
+        );
+
+    box-shadow:
+        0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+
+.global-chat-item:hover {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 79, 179, 0.10),
+            rgba(114, 133, 255, 0.06)
+        );
+
+    border-color: rgba(255, 79, 179, 0.25);
+
+    box-shadow:
+        inset 3px 0 0 var(--accent),
+        0 5px 20px rgba(0, 0, 0, 0.12);
+}
+
+
+.global-chat-item.active {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 79, 179, 0.14),
+            rgba(114, 133, 255, 0.08)
+        );
+
+    border-color:
+        rgba(255, 79, 179, 0.3);
+
+    box-shadow:
+        inset 3px 0 0 var(--accent),
+        0 5px 25px rgba(255, 79, 179, 0.06);
+}
+
+
+.global-chat-avatar {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 79, 179, 0.16),
+            rgba(114, 133, 255, 0.14)
+        );
+
+    border-color:
+        rgba(255, 79, 179, 0.25);
+
+    color: var(--accent);
+
+    font-size: 17px;
+
+    box-shadow:
+        0 0 20px rgba(255, 79, 179, 0.08);
+}
+
+
+.global-chat-item .user-display-name {
+    color: var(--text);
+}
+
+
+.global-chat-item .user-username {
+    color: var(--accent2);
+}
 .user-avatar,
 .conversation-avatar {
     width: 38px;
@@ -1183,89 +1266,4 @@ input {
     font-family: Arial, sans-serif;
     font-size: 14px;
     font-weight: 700;
-}
-
-/* ============================================================
-   MOBILE CHAT
-   ============================================================ */
-
-.back-to-users {
-    display: none;
-}
-
-
-/* Tablets / phones */
-
-@media (max-width: 700px) {
-
-    .chat-body {
-        position: relative;
-        overflow: hidden;
-    }
-
-
-    .user-sidebar {
-        width: 100%;
-        min-width: 100%;
-        transition:
-            transform 0.25s ease;
-    }
-
-
-    .conversation {
-        position: absolute;
-        inset: 0;
-
-        width: 100%;
-
-        transform:
-            translateX(100%);
-
-        transition:
-            transform 0.25s ease;
-
-        background: inherit;
-    }
-
-
-    .conversation.mobile-active {
-        transform:
-            translateX(0);
-    }
-
-
-    .user-sidebar.mobile-hidden {
-        transform:
-            translateX(-100%);
-    }
-
-
-    .back-to-users {
-        display: flex;
-
-        align-items: center;
-        gap: 6px;
-
-        position: absolute;
-
-        top: 10px;
-        left: 10px;
-
-        z-index: 20;
-
-        border: none;
-        background: transparent;
-
-        color: inherit;
-
-        cursor: pointer;
-
-        font-size: 14px;
-    }
-
-
-    .conversation-header {
-        padding-left: 70px;
-    }
-
 }

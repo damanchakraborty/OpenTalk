@@ -170,117 +170,167 @@
 
 
 
-    <div class="chat-body">
+<div class="chat-body">
+
+    <!-- ============================================= -->
+    <!-- USER SIDEBAR -->
+    <!-- ============================================= -->
+
+    <aside
+        id="user-sidebar"
+        class="user-sidebar"
+    >
+
+        <div class="sidebar-header">
+
+            <h2>Chats</h2>
+
+        </div>
 
 
-        <!-- USER SIDEBAR -->
+        <!-- GLOBAL CHAT -->
 
-        <aside
-            id="user-sidebar"
-            class="user-sidebar"
+        <button
+            id="global-chat-button"
+            class="global-chat-button"
+            type="button"
         >
 
-            <div class="sidebar-header">
+            <div class="user-avatar global-avatar">
+                #
+            </div>
 
-                <h2>Users</h2>
+            <div class="user-info">
+
+                <div class="user-display-name">
+                    Global Chat
+                </div>
+
+                <div class="user-username">
+                    Everyone
+                </div>
 
             </div>
 
+        </button>
 
-            <div class="user-search">
 
-                <input
-                    id="user-search"
-                    type="text"
-                    placeholder="Search users..."
-                    autocomplete="off"
-                >
+        <!-- SEARCH -->
 
+        <div class="user-search">
+
+            <input
+                id="user-search"
+                type="text"
+                placeholder="Search users..."
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <!-- USERS -->
+
+        <div
+            id="user-list"
+            class="user-list"
+        >
+
+            <div class="sidebar-empty">
+                Loading users...
             </div>
 
+        </div>
+
+    </aside>
+
+
+
+    <!-- ============================================= -->
+    <!-- CONVERSATION -->
+    <!-- ============================================= -->
+
+    <section
+        id="conversation"
+        class="conversation"
+    >
+
+        <!-- MOBILE BACK BUTTON -->
+
+        <button
+            id="back-to-users"
+            class="back-to-users"
+            type="button"
+        >
+            ←
+            <span>Back</span>
+        </button>
+
+
+        <!-- CONVERSATION HEADER -->
+
+        <header
+            id="conversation-header"
+            class="conversation-header"
+        >
 
             <div
-                id="user-list"
-                class="user-list"
+                id="conversation-user"
+                class="conversation-user"
             >
 
-                <div class="sidebar-empty">
-                    Loading users...
-                </div>
+                <span class="conversation-placeholder">
+                    Select a user to start chatting
+                </span>
 
             </div>
 
-        </aside>
+        </header>
 
 
+        <!-- MESSAGES -->
 
-        <!-- CONVERSATION -->
+        <section
+            id="messages"
+            class="messages"
+        >
 
-        <section class="conversation">
-
-
-            <header
-                id="conversation-header"
-                class="conversation-header"
-            >
-
-                <div
-                    id="conversation-user"
-                    class="conversation-user"
-                >
-
-                    <span class="conversation-placeholder">
-                        Select a user to start chatting
-                    </span>
-
-                </div>
-
-            </header>
-
-
-
-            <section
-                id="messages"
-                class="messages"
-            >
-
-                <div class="empty">
-                    Select a user to start a conversation.
-                </div>
-
-            </section>
-
-
-
-            <form
-                id="message-form"
-                class="message-form"
-            >
-
-                <input
-                    id="message"
-                    type="text"
-                    placeholder="Select a conversation..."
-                    maxlength="500"
-                    autocomplete="off"
-                    disabled
-                    required
-                >
-
-
-                <button
-                    type="submit"
-                    disabled
-                >
-                    ➤
-                </button>
-
-            </form>
-
+            <div class="empty">
+                Select a user to start a conversation.
+            </div>
 
         </section>
 
-    </div>
+
+        <!-- MESSAGE INPUT -->
+
+        <form
+            id="message-form"
+            class="message-form"
+        >
+
+            <input
+                id="message"
+                type="text"
+                placeholder="Select a conversation..."
+                maxlength="500"
+                autocomplete="off"
+                disabled
+                required
+            >
+
+            <button
+                type="submit"
+                disabled
+            >
+                ➤
+            </button>
+
+        </form>
+
+    </section>
+
+</div>
 
 </main>
 

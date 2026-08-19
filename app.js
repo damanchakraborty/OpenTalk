@@ -59,6 +59,27 @@ let initializingUser = false;
 // DOM
 // ============================================================
 
+const userSidebar =
+    document.getElementById(
+        "user-sidebar"
+    );
+
+const conversation =
+    document.getElementById(
+        "conversation"
+    );
+
+const backToUsers =
+    document.getElementById(
+        "back-to-users"
+    );
+
+const globalChatButton =
+    document.getElementById(
+        "global-chat-button"
+    );
+
+
 // Screens
 
 const authScreen =
@@ -262,6 +283,84 @@ function clearError(
 
     element.style.display =
         "none";
+}
+
+
+// ============================================================
+// MOBILE CHAT NAVIGATION
+// ============================================================
+
+function showConversationMobile() {
+
+    if (!userSidebar || !conversation) {
+        return;
+    }
+
+    userSidebar.classList.add(
+        "mobile-hidden"
+    );
+
+    conversation.classList.add(
+        "mobile-active"
+    );
+}
+
+
+function showSidebarMobile() {
+
+    if (!userSidebar || !conversation) {
+        return;
+    }
+
+    userSidebar.classList.remove(
+        "mobile-hidden"
+    );
+
+    conversation.classList.remove(
+        "mobile-active"
+    );
+}
+
+
+if (backToUsers) {
+
+    backToUsers.addEventListener(
+        "click",
+        () => {
+
+            showSidebarMobile();
+
+            currentConversationId =
+                null;
+
+            currentConversationUser =
+                null;
+
+            messageInput.disabled =
+                true;
+
+            messageForm
+                .querySelector("button")
+                .disabled = true;
+
+            messageInput.placeholder =
+                "Select a conversation...";
+
+            conversationUser.innerHTML = `
+                <span class="conversation-placeholder">
+                    Select a user to start chatting
+                </span>
+            `;
+
+            messages.innerHTML = `
+                <div class="empty">
+                    Select a user to start a conversation.
+                </div>
+            `;
+
+            stopRealtime();
+        }
+    );
 }
 
 
@@ -1234,24 +1333,20 @@ async function loadUsers() {
 
 
     const {
-        data,
+        data: users,
         error
-    } =
-        await client
-            .from("profiles")
-            .select(
-                "id, username, display_name, avatar_url"
-            )
-            .neq(
-                "id",
-                currentUser.id
-            )
-            .order(
-                "display_name",
-                {
-                    ascending: true
-                }
-            );
+    } = await client
+
+        .from("profiles")
+
+        .select(
+            "id, username, display_name, avatar_url"
+        )
+
+        .neq(
+            "id",
+            currentUser.id
+        );
 
 
     if (error) {
@@ -1260,7 +1355,6 @@ async function loadUsers() {
             "USER LOAD ERROR:",
             error
         );
-
 
         userList.innerHTML = `
             <div class="sidebar-empty">
@@ -1273,7 +1367,174 @@ async function loadUsers() {
 
 
     allUsers =
-        data || [];
+        users || [];
+
+
+    /*
+     * Find the latest message involving
+     * each user.
+     */
+
+    const {
+        data: conversations,
+        error: conversationError
+    } = await client
+
+        .from("conversations")
+
+        .select(`
+            id,
+            conversation_participants (
+                user_id
+            )
+        `);
+
+
+    if (conversationError) {
+
+        console.error(
+            "CONVERSATION LOAD ERROR:",
+            conversationError
+        );
+
+        renderUsers(
+            allUsers
+        );
+
+        return;
+    }
+
+
+    const latestMessageByUser =
+        new Map();
+
+
+    for (
+        const conversation of
+        conversations || []
+    ) {
+
+        const participants =
+            conversation
+                .conversation_participants ||
+            [];
+
+
+        const containsCurrentUser =
+            participants.some(
+                participant =>
+                    participant.user_id ===
+                    currentUser.id
+            );
+
+
+        if (!containsCurrentUser) {
+            continue;
+        }
+
+
+        const otherParticipant =
+            participants.find(
+                participant =>
+                    participant.user_id !==
+                    currentUser.id
+            );
+
+
+        if (!otherParticipant) {
+            continue;
+        }
+
+
+        const {
+            data: latestMessage
+        } = await client
+
+            .from("messages")
+
+            .select(
+                "created_at"
+            )
+
+            .eq(
+                "conversation_id",
+                conversation.id
+            )
+
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            )
+
+            .limit(1)
+            .maybeSingle();
+
+
+        if (
+            latestMessage
+        ) {
+
+            latestMessageByUser.set(
+                otherParticipant.user_id,
+                latestMessage.created_at
+            );
+        }
+    }
+
+
+    /*
+     * Users with recent messages first.
+     * Users we've never messaged go afterward,
+     * alphabetically.
+     */
+
+    allUsers.sort(
+        (a, b) => {
+
+            const dateA =
+                latestMessageByUser.get(
+                    a.id
+                );
+
+            const dateB =
+                latestMessageByUser.get(
+                    b.id
+                );
+
+
+            if (
+                dateA &&
+                dateB
+            ) {
+
+                return (
+                    new Date(dateB) -
+                    new Date(dateA)
+                );
+            }
+
+
+            if (dateA) {
+                return -1;
+            }
+
+
+            if (dateB) {
+                return 1;
+            }
+
+
+            return (
+                a.display_name ||
+                ""
+            ).localeCompare(
+                b.display_name ||
+                ""
+            );
+        }
+    );
 
 
     renderUsers(
@@ -1497,6 +1758,7 @@ async function openConversation(
         return;
     }
 
+    showConversationMobile();
 
     console.log(
         "Opening conversation with:",
@@ -1610,7 +1872,122 @@ async function openConversation(
         "Connected";
 }
 
+// ============================================================
+// GLOBAL CHAT
+// ============================================================
 
+if (globalChatButton) {
+
+    globalChatButton.addEventListener(
+        "click",
+        async () => {
+
+            if (!currentUser) {
+                return;
+            }
+
+            console.log(
+                "Opening global chat..."
+            );
+
+            showConversationMobile();
+
+            status.textContent =
+                "Opening global chat...";
+
+            conversationUser.innerHTML = `
+                <div class="conversation-avatar global-avatar">
+                    #
+                </div>
+
+                <div>
+
+                    <div class="conversation-name">
+                        Global Chat
+                    </div>
+
+                    <div class="conversation-username">
+                        Everyone
+                    </div>
+
+                </div>
+            `;
+
+            /*
+             * For now we are going to reserve this
+             * conversation ID for the global room.
+             *
+             * We'll wire this into Supabase next.
+             */
+
+            const {
+                data,
+                error
+            } = await client
+                .from("conversations")
+                .select("id")
+                .eq("type", "global")
+                .maybeSingle();
+
+
+            if (error) {
+
+                console.error(
+                    "GLOBAL CHAT ERROR:",
+                    error
+                );
+
+                status.textContent =
+                    "Global chat error";
+
+                return;
+            }
+
+
+            if (!data) {
+
+                console.error(
+                    "Global conversation does not exist."
+                );
+
+                status.textContent =
+                    "Global chat is not configured";
+
+                return;
+            }
+
+
+            currentConversationId =
+                data.id;
+
+            currentConversationUser =
+                null;
+
+
+            await stopRealtime();
+
+            await loadConversationMessages();
+
+            await startConversationRealtime();
+
+
+            messageInput.disabled =
+                false;
+
+            messageForm
+                .querySelector("button")
+                .disabled = false;
+
+            messageInput.placeholder =
+                "Message everyone...";
+
+            messageInput.focus();
+
+            status.textContent =
+                "Connected";
+        }
+    );
+}
 // ============================================================
 // LOAD CONVERSATION MESSAGES
 // ============================================================
@@ -1913,12 +2290,56 @@ if (messageForm) {
 
             if (success) {
 
-                messageInput.value =
-                    "";
+    messageInput.value = "";
 
-                messageInput.focus();
-            }
+    messageInput.focus();
 
+    moveCurrentUserToTop();
+}
+
+function moveCurrentUserToTop() {
+
+    if (
+        !currentConversationUser
+    ) {
+        return;
+    }
+
+
+    const userId =
+        currentConversationUser.id;
+
+
+    const index =
+        allUsers.findIndex(
+            user =>
+                user.id === userId
+        );
+
+
+    if (index === -1) {
+        return;
+    }
+
+
+    const [
+        user
+    ] =
+        allUsers.splice(
+            index,
+            1
+        );
+
+
+    allUsers.unshift(
+        user
+    );
+
+
+    renderUsers(
+        allUsers
+    );
+}
 
             button.disabled =
                 false;

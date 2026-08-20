@@ -10,8 +10,6 @@ const client =
         SUPABASE_KEY
     );
 
-// OAuth always redirects back through auth-callback.html
-
 const REDIRECT_URL =
     new URL(
         "auth-callback.html",
@@ -28,8 +26,6 @@ let realtimeChannel = null;
 
 let allUsers = [];
 
-let recentUserIds = [];
-
 const displayedMessageIds =
     new Set();
 
@@ -37,7 +33,9 @@ let googleAuthPopup = null;
 let googleAuthTimeout = null;
 
 let initializingUser = false;
+let editingProfile = false;
 
+// Garbage code snippet, but it keeps the old HTML compatible.
 const globalChatButton =
     document.getElementById(
         "global-chat-button"
@@ -67,7 +65,7 @@ const googleLogin =
         "google-login"
     );
 
-// Initial profile setup
+// Profile
 
 const profileForm =
     document.getElementById(
@@ -84,71 +82,18 @@ const profileDisplayName =
         "profile-display-name"
     );
 
-// Profile settings
+// Profile customization buttons.
+// Supports either name so we don't have to care which one index.html uses.
 
-const profileButton =
+const profileCustomizeButton =
+    document.getElementById(
+        "profile-customize-button"
+    ) ||
+    document.getElementById(
+        "edit-profile-button"
+    ) ||
     document.getElementById(
         "profile-button"
-    );
-
-const profileSettings =
-    document.getElementById(
-        "profile-settings"
-    );
-
-const closeProfileSettings =
-    document.getElementById(
-        "close-profile-settings"
-    );
-
-const cancelProfileSettings =
-    document.getElementById(
-        "cancel-profile-settings"
-    );
-
-const profileSettingsForm =
-    document.getElementById(
-        "profile-settings-form"
-    );
-
-const profileSettingsError =
-    document.getElementById(
-        "profile-settings-error"
-    );
-
-const settingsAvatarUrl =
-    document.getElementById(
-        "settings-avatar-url"
-    );
-
-const settingsDisplayName =
-    document.getElementById(
-        "settings-display-name"
-    );
-
-const settingsUsername =
-    document.getElementById(
-        "settings-username"
-    );
-
-const profilePreviewAvatar =
-    document.getElementById(
-        "profile-preview-avatar"
-    );
-
-const profilePreviewName =
-    document.getElementById(
-        "profile-preview-name"
-    );
-
-const profilePreviewUsername =
-    document.getElementById(
-        "profile-preview-username"
-    );
-
-const currentUserAvatar =
-    document.getElementById(
-        "current-user-avatar"
     );
 
 // Errors
@@ -228,25 +173,9 @@ const mobileSidebarBackdrop =
     );
 
 
-// Global chat
-
-if (globalChatButton) {
-
-    globalChatButton.addEventListener(
-        "click",
-        () => {
-
-            closeMobileSidebar();
-
-            globalChatButton.classList.add(
-                "active"
-            );
-        }
-    );
-}
-
-
+// ------------------------------------------------------------
 // Mobile sidebar
+// ------------------------------------------------------------
 
 function isMobile() {
 
@@ -348,7 +277,9 @@ if (mobileSidebarBackdrop) {
 }
 
 
+// ------------------------------------------------------------
 // Screens
+// ------------------------------------------------------------
 
 function hideAllScreens() {
 
@@ -407,7 +338,9 @@ function showChatScreen() {
 }
 
 
+// ------------------------------------------------------------
 // Errors
+// ------------------------------------------------------------
 
 function showError(
     element,
@@ -441,7 +374,9 @@ function clearError(
 }
 
 
+// ------------------------------------------------------------
 // Google login
+// ------------------------------------------------------------
 
 function resetGoogleButton() {
 
@@ -457,7 +392,7 @@ function resetGoogleButton() {
             G
         </span>
 
-        <span>
+        <span class="google-login-text">
             Continue with Google
         </span>
     `;
@@ -477,7 +412,7 @@ function setGoogleButtonLoading() {
             G
         </span>
 
-        <span>
+        <span class="google-login-text">
             Opening Google...
         </span>
     `;
@@ -505,10 +440,6 @@ async function startGoogleLogin() {
 
     setGoogleButtonLoading();
 
-    console.log(
-        "Starting Google popup login..."
-    );
-
     const width = 500;
     const height = 650;
 
@@ -529,7 +460,7 @@ async function startGoogleLogin() {
     googleAuthPopup =
         window.open(
             "about:blank",
-            "chudchat_google_login",
+            "opentalk_google_login",
             `
                 width=${width},
                 height=${height},
@@ -542,10 +473,6 @@ async function startGoogleLogin() {
         );
 
     if (!googleAuthPopup) {
-
-        console.error(
-            "Google popup was blocked."
-        );
 
         showError(
             authError,
@@ -579,7 +506,7 @@ async function startGoogleLogin() {
     if (error) {
 
         console.error(
-            "GOOGLE OAUTH URL ERROR:",
+            "GOOGLE OAUTH ERROR:",
             error
         );
 
@@ -599,10 +526,6 @@ async function startGoogleLogin() {
         !data ||
         !data.url
     ) {
-
-        console.error(
-            "No OAuth URL returned."
-        );
 
         closeGooglePopup();
 
@@ -660,10 +583,6 @@ function startGooglePopupWatcher() {
                     googleAuthPopup.closed
                 ) {
 
-                    console.log(
-                        "Google popup closed."
-                    );
-
                     clearInterval(
                         googleAuthTimeout
                     );
@@ -697,7 +616,7 @@ function startGooglePopupWatcher() {
                 if (error) {
 
                     console.error(
-                        "POPUP SESSION CHECK ERROR:",
+                        "SESSION CHECK ERROR:",
                         error
                     );
 
@@ -709,10 +628,6 @@ function startGooglePopupWatcher() {
                     data.session &&
                     !currentUser
                 ) {
-
-                    console.log(
-                        "Google authentication successful."
-                    );
 
                     currentUser =
                         data.session.user;
@@ -777,7 +692,9 @@ if (googleLogin) {
 }
 
 
+// ------------------------------------------------------------
 // OAuth callback
+// ------------------------------------------------------------
 
 window.addEventListener(
     "message",
@@ -802,10 +719,6 @@ window.addEventListener(
             event.data.type ===
             "CHUDCHAT_AUTH_SUCCESS"
         ) {
-
-            console.log(
-                "Received successful Google login from popup."
-            );
 
             closeGooglePopup();
 
@@ -837,10 +750,6 @@ window.addEventListener(
                 !data.session
             ) {
 
-                console.error(
-                    "Popup reported success but no session exists."
-                );
-
                 showError(
                     authError,
                     "Authentication completed, but no session was found."
@@ -868,11 +777,6 @@ window.addEventListener(
             "CHUDCHAT_AUTH_ERROR"
         ) {
 
-            console.error(
-                "Google authentication failed:",
-                event.data.message
-            );
-
             closeGooglePopup();
 
             showError(
@@ -882,25 +786,20 @@ window.addEventListener(
             );
 
             resetGoogleButton();
-
-            return;
         }
     }
 );
 
 
-// Profile loading
+// ------------------------------------------------------------
+// Profiles
+// ------------------------------------------------------------
 
 async function loadProfile() {
 
     if (!currentUser) {
         return null;
     }
-
-    console.log(
-        "Loading profile for:",
-        currentUser.id
-    );
 
     const {
         data,
@@ -930,109 +829,6 @@ async function loadProfile() {
     return data;
 }
 
-
-// User initialization
-
-async function initializeUser() {
-
-    if (
-        !currentUser ||
-        initializingUser
-    ) {
-        return;
-    }
-
-    initializingUser =
-        true;
-
-    try {
-
-        console.log(
-            "Initializing user:",
-            currentUser
-        );
-
-        currentProfile =
-            await loadProfile();
-
-        if (!currentProfile) {
-
-            console.log(
-                "No profile found."
-            );
-
-            showProfileScreen();
-
-            clearError(
-                profileError
-            );
-
-            const metadata =
-                currentUser.user_metadata ||
-                {};
-
-            const googleName =
-                metadata.full_name ||
-                metadata.name ||
-                "";
-
-            const googleUsername =
-                createUsernameSuggestion(
-                    metadata
-                );
-
-            profileUsername.value =
-                googleUsername;
-
-            profileDisplayName.value =
-                googleName;
-
-            profileUsername.focus();
-
-            return;
-        }
-
-        if (
-            !currentProfile.username ||
-            !currentProfile.display_name ||
-            currentProfile.display_name ===
-                "New User"
-        ) {
-
-            showProfileScreen();
-
-            clearError(
-                profileError
-            );
-
-            profileUsername.value =
-                currentProfile.username ||
-                "";
-
-            profileDisplayName.value =
-                currentProfile.display_name ===
-                    "New User"
-                    ? ""
-                    :
-                    (
-                        currentProfile.display_name ||
-                        ""
-                    );
-
-            profileUsername.focus();
-
-            return;
-        }
-
-        await startChat();
-
-    } finally {
-
-        initializingUser =
-            false;
-    }
-}
-
 function createUsernameSuggestion(
     metadata
 ) {
@@ -1060,17 +856,159 @@ function createUsernameSuggestion(
         value += "user";
     }
 
-    value =
-        value.substring(
-            0,
-            24
-        );
+    return value.substring(
+        0,
+        24
+    );
+}
 
-    return value;
+function prepareProfileForm(
+    profile
+) {
+
+    if (!profileUsername ||
+        !profileDisplayName) {
+        return;
+    }
+
+    if (profile) {
+
+        profileUsername.value =
+            profile.username || "";
+
+        profileDisplayName.value =
+            profile.display_name === "New User"
+                ? ""
+                : (
+                    profile.display_name || ""
+                );
+
+    } else {
+
+        const metadata =
+            currentUser?.user_metadata || {};
+
+        profileUsername.value =
+            createUsernameSuggestion(
+                metadata
+            );
+
+        profileDisplayName.value =
+            metadata.full_name ||
+            metadata.name ||
+            "";
+    }
+}
+
+function openProfileEditor() {
+
+    if (!currentUser) {
+        return;
+    }
+
+    editingProfile = true;
+
+    clearError(
+        profileError
+    );
+
+    prepareProfileForm(
+        currentProfile
+    );
+
+    showProfileScreen();
+
+    if (profileUsername) {
+        profileUsername.focus();
+    }
+}
+
+// Profile button actually does something now.
+if (profileCustomizeButton) {
+
+    profileCustomizeButton.addEventListener(
+        "click",
+        openProfileEditor
+    );
+}
+
+async function initializeUser() {
+
+    if (
+        !currentUser ||
+        initializingUser
+    ) {
+        return;
+    }
+
+    initializingUser =
+        true;
+
+    try {
+
+        currentProfile =
+            await loadProfile();
+
+        if (!currentProfile) {
+
+            editingProfile = false;
+
+            prepareProfileForm(
+                null
+            );
+
+            showProfileScreen();
+
+            clearError(
+                profileError
+            );
+
+            if (profileUsername) {
+                profileUsername.focus();
+            }
+
+            return;
+        }
+
+        if (
+            !currentProfile.username ||
+            !currentProfile.display_name ||
+            currentProfile.display_name ===
+                "New User"
+        ) {
+
+            editingProfile = false;
+
+            prepareProfileForm(
+                currentProfile
+            );
+
+            showProfileScreen();
+
+            clearError(
+                profileError
+            );
+
+            if (profileUsername) {
+                profileUsername.focus();
+            }
+
+            return;
+        }
+
+        await startChat();
+
+    } finally {
+
+        initializingUser =
+            false;
+    }
 }
 
 
-// Initial profile setup
+// ------------------------------------------------------------
+// Save profile
+// ------------------------------------------------------------
 
 if (profileForm) {
 
@@ -1132,9 +1070,16 @@ if (profileForm) {
                     "button"
                 );
 
-            button.disabled = true;
-            button.textContent = "Checking...";
+            if (button) {
 
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    "Checking...";
+            }
+
+            // Stupid shit: check first, then let the DB be the final authority.
             const {
                 data: existingUsername,
                 error: usernameCheckError
@@ -1155,8 +1100,14 @@ if (profileForm) {
                     usernameCheckError
                 );
 
-                button.disabled = false;
-                button.textContent = "Continue";
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Continue";
+                }
 
                 showError(
                     profileError,
@@ -1171,8 +1122,14 @@ if (profileForm) {
                 existingUsername.id !== currentUser.id
             ) {
 
-                button.disabled = false;
-                button.textContent = "Continue";
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Continue";
+                }
 
                 showError(
                     profileError,
@@ -1185,8 +1142,10 @@ if (profileForm) {
                 return;
             }
 
-            button.textContent =
-                "Saving...";
+            if (button) {
+                button.textContent =
+                    "Saving...";
+            }
 
             let data;
             let error;
@@ -1197,12 +1156,9 @@ if (profileForm) {
                     await client
                         .from("profiles")
                         .update({
-
                             username,
-
                             display_name:
                                 displayName
-
                         })
                         .eq(
                             "id",
@@ -1211,8 +1167,11 @@ if (profileForm) {
                         .select()
                         .single();
 
-                data = result.data;
-                error = result.error;
+                data =
+                    result.data;
+
+                error =
+                    result.error;
 
             } else {
 
@@ -1220,7 +1179,6 @@ if (profileForm) {
                     await client
                         .from("profiles")
                         .insert({
-
                             id:
                                 currentUser.id,
 
@@ -1228,55 +1186,83 @@ if (profileForm) {
 
                             display_name:
                                 displayName
-
                         })
                         .select()
                         .single();
 
-                data = result.data;
-                error = result.error;
+                data =
+                    result.data;
+
+                error =
+                    result.error;
             }
 
             if (error) {
 
                 console.error(
-                    "PROFILE CREATE ERROR:",
+                    "PROFILE SAVE ERROR:",
                     error
                 );
 
-                button.disabled = false;
-                button.textContent = "Continue";
+                if (button) {
 
-                if (
-                    error.code === "23505" &&
-                    (
-                        error.constraint
-                            ?.toLowerCase()
-                            .includes("username") ||
-                        error.message
-                            ?.toLowerCase()
-                            .includes("username")
-                    )
-                ) {
+                    button.disabled =
+                        false;
 
-                    showError(
-                        profileError,
-                        "That username was just taken. Please choose another one."
-                    );
-
-                    profileUsername.focus();
-                    profileUsername.select();
-
-                    return;
+                    button.textContent =
+                        "Continue";
                 }
 
                 if (
-                    error.code === "23505"
+                    error.code ===
+                    "23505"
                 ) {
+
+                    const constraint =
+                        (
+                            error.constraint ||
+                            ""
+                        ).toLowerCase();
+
+                    if (
+                        constraint.includes(
+                            "username"
+                        ) ||
+                        (
+                            error.message ||
+                            ""
+                        )
+                            .toLowerCase()
+                            .includes(
+                                "username"
+                            )
+                    ) {
+
+                        showError(
+                            profileError,
+                            "That username was just taken. Please choose another one."
+                        );
+
+                        profileUsername.focus();
+                        profileUsername.select();
+
+                        return;
+                    }
+
+                    // Don't claim the account is broken when we're just editing.
+                    if (currentProfile) {
+
+                        showError(
+                            profileError,
+                            "Could not save those profile changes."
+                        );
+
+                        return;
+                    }
 
                     showError(
                         profileError,
-                        "Your profile already exists. Please refresh the page."
+                        "Your profile already exists. Please try again."
                     );
 
                     return;
@@ -1285,7 +1271,7 @@ if (profileForm) {
                 showError(
                     profileError,
                     error.message ||
-                    "Failed to create your profile."
+                    "Failed to save your profile."
                 );
 
                 return;
@@ -1294,8 +1280,17 @@ if (profileForm) {
             currentProfile =
                 data;
 
-            button.disabled = false;
-            button.textContent = "Continue";
+            editingProfile =
+                false;
+
+            if (button) {
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Continue";
+            }
 
             await startChat();
         }
@@ -1303,410 +1298,9 @@ if (profileForm) {
 }
 
 
-// Profile customization
-
-function openProfileSettings() {
-
-    if (
-        !currentProfile ||
-        !currentUser ||
-        !profileSettings
-    ) {
-        return;
-    }
-
-    clearError(
-        profileSettingsError
-    );
-
-    settingsAvatarUrl.value =
-        currentProfile.avatar_url ||
-        "";
-
-    settingsDisplayName.value =
-        currentProfile.display_name ||
-        "";
-
-    settingsUsername.value =
-        currentProfile.username ||
-        "";
-
-    updateProfilePreview();
-
-    profileSettings.classList.remove(
-        "hidden"
-    );
-}
-
-function closeProfileSettingsPanel() {
-
-    if (!profileSettings) {
-        return;
-    }
-
-    profileSettings.classList.add(
-        "hidden"
-    );
-
-    clearError(
-        profileSettingsError
-    );
-}
-
-function updateProfilePreview() {
-
-    if (
-        !profilePreviewAvatar ||
-        !profilePreviewName ||
-        !profilePreviewUsername
-    ) {
-        return;
-    }
-
-    const displayName =
-        settingsDisplayName.value.trim() ||
-        "User";
-
-    const username =
-        settingsUsername.value.trim() ||
-        "user";
-
-    const avatarUrl =
-        settingsAvatarUrl.value.trim();
-
-    profilePreviewName.textContent =
-        displayName;
-
-    profilePreviewUsername.textContent =
-        `@${username}`;
-
-    if (avatarUrl) {
-
-        profilePreviewAvatar.innerHTML = `
-            <img
-                src="${escapeHtml(avatarUrl)}"
-                alt=""
-            >
-        `;
-
-    } else {
-
-        profilePreviewAvatar.textContent =
-            getInitial(
-                displayName
-            );
-    }
-}
-
-function updateCurrentUserAvatar() {
-
-    if (!currentUserAvatar) {
-        return;
-    }
-
-    const avatarUrl =
-        currentProfile?.avatar_url;
-
-    if (avatarUrl) {
-
-        currentUserAvatar.innerHTML = `
-            <img
-                src="${escapeHtml(avatarUrl)}"
-                alt=""
-            >
-        `;
-
-    } else {
-
-        currentUserAvatar.textContent =
-            getInitial(
-                currentProfile?.display_name
-            );
-    }
-}
-
-if (profileButton) {
-
-    profileButton.addEventListener(
-        "click",
-        openProfileSettings
-    );
-}
-
-if (closeProfileSettings) {
-
-    closeProfileSettings.addEventListener(
-        "click",
-        closeProfileSettingsPanel
-    );
-}
-
-if (cancelProfileSettings) {
-
-    cancelProfileSettings.addEventListener(
-        "click",
-        closeProfileSettingsPanel
-    );
-}
-
-if (settingsDisplayName) {
-
-    settingsDisplayName.addEventListener(
-        "input",
-        updateProfilePreview
-    );
-}
-
-if (settingsUsername) {
-
-    settingsUsername.addEventListener(
-        "input",
-        updateProfilePreview
-    );
-}
-
-if (settingsAvatarUrl) {
-
-    settingsAvatarUrl.addEventListener(
-        "input",
-        updateProfilePreview
-    );
-}
-
-if (profileSettingsForm) {
-
-    profileSettingsForm.addEventListener(
-        "submit",
-        async (event) => {
-
-            event.preventDefault();
-
-            clearError(
-                profileSettingsError
-            );
-
-            if (
-                !currentUser ||
-                !currentProfile
-            ) {
-                return;
-            }
-
-            const username =
-                settingsUsername.value
-                    .trim()
-                    .toLowerCase();
-
-            const displayName =
-                settingsDisplayName.value
-                    .trim();
-
-            const avatarUrl =
-                settingsAvatarUrl.value
-                    .trim();
-
-            if (
-                !/^[a-z0-9_]{3,24}$/.test(
-                    username
-                )
-            ) {
-
-                showError(
-                    profileSettingsError,
-                    "Username must be 3-24 characters and contain only letters, numbers, and underscores."
-                );
-
-                settingsUsername.focus();
-
-                return;
-            }
-
-            if (!displayName) {
-
-                showError(
-                    profileSettingsError,
-                    "Please enter a display name."
-                );
-
-                settingsDisplayName.focus();
-
-                return;
-            }
-
-            if (
-                avatarUrl &&
-                !/^https?:\/\/.+/i.test(
-                    avatarUrl
-                )
-            ) {
-
-                showError(
-                    profileSettingsError,
-                    "Avatar URL must start with http:// or https://."
-                );
-
-                settingsAvatarUrl.focus();
-
-                return;
-            }
-
-            const button =
-                profileSettingsForm.querySelector(
-                    "button[type='submit']"
-                );
-
-            button.disabled =
-                true;
-
-            button.textContent =
-                "Checking...";
-
-            // stupid shit: check the username before Supabase gets angry
-
-            const {
-                data: existingUsername,
-                error: usernameError
-            } =
-                await client
-                    .from("profiles")
-                    .select("id")
-                    .eq(
-                        "username",
-                        username
-                    )
-                    .maybeSingle();
-
-            if (usernameError) {
-
-                console.error(
-                    "PROFILE USERNAME CHECK ERROR:",
-                    usernameError
-                );
-
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    "Save changes";
-
-                showError(
-                    profileSettingsError,
-                    "Could not check username. Please try again."
-                );
-
-                return;
-            }
-
-            if (
-                existingUsername &&
-                existingUsername.id !== currentUser.id
-            ) {
-
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    "Save changes";
-
-                showError(
-                    profileSettingsError,
-                    "That username is already taken."
-                );
-
-                settingsUsername.focus();
-                settingsUsername.select();
-
-                return;
-            }
-
-            button.textContent =
-                "Saving...";
-
-            const {
-                data,
-                error
-            } =
-                await client
-                    .from("profiles")
-                    .update({
-
-                        username,
-
-                        display_name:
-                            displayName,
-
-                        avatar_url:
-                            avatarUrl ||
-                            null
-
-                    })
-                    .eq(
-                        "id",
-                        currentUser.id
-                    )
-                    .select()
-                    .single();
-
-            if (error) {
-
-                console.error(
-                    "PROFILE UPDATE ERROR:",
-                    error
-                );
-
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    "Save changes";
-
-                if (
-                    error.code === "23505"
-                ) {
-
-                    showError(
-                        profileSettingsError,
-                        "That username is already taken."
-                    );
-
-                    settingsUsername.focus();
-
-                    return;
-                }
-
-                showError(
-                    profileSettingsError,
-                    error.message ||
-                    "Failed to update your profile."
-                );
-
-                return;
-            }
-
-            currentProfile =
-                data;
-
-            currentUserElement.textContent =
-                currentProfile.display_name;
-
-            updateCurrentUserAvatar();
-
-            button.disabled =
-                false;
-
-            button.textContent =
-                "Save changes";
-
-            closeProfileSettingsPanel();
-
-            // Refresh the sidebar because profile information changed.
-            await loadUsers();
-        }
-    );
-}
-
-
+// ------------------------------------------------------------
 // Users
+// ------------------------------------------------------------
 
 async function loadUsers() {
 
@@ -1735,6 +1329,12 @@ async function loadUsers() {
             .neq(
                 "id",
                 currentUser.id
+            )
+            .order(
+                "display_name",
+                {
+                    ascending: true
+                }
             );
 
     if (error) {
@@ -1755,28 +1355,6 @@ async function loadUsers() {
 
     allUsers =
         data || [];
-
-    renderUsers(
-        allUsers
-    );
-}
-
-function markUserRecentlyMessaged(
-    userId
-) {
-
-    if (!userId) {
-        return;
-    }
-
-    recentUserIds =
-        recentUserIds.filter(
-            id => id !== userId
-        );
-
-    recentUserIds.unshift(
-        userId
-    );
 
     renderUsers(
         allUsers
@@ -1808,48 +1386,8 @@ function renderUsers(
         return;
     }
 
-    const sortedUsers =
-        [...users].sort(
-            (a, b) => {
-
-                const aIndex =
-                    recentUserIds.indexOf(
-                        a.id
-                    );
-
-                const bIndex =
-                    recentUserIds.indexOf(
-                        b.id
-                    );
-
-                if (
-                    aIndex === -1 &&
-                    bIndex === -1
-                ) {
-
-                    return (
-                        a.display_name ||
-                        ""
-                    ).localeCompare(
-                        b.display_name ||
-                        ""
-                    );
-                }
-
-                if (aIndex === -1) {
-                    return 1;
-                }
-
-                if (bIndex === -1) {
-                    return -1;
-                }
-
-                return aIndex - bIndex;
-            }
-        );
-
     for (
-        const user of sortedUsers
+        const user of users
     ) {
 
         const element =
@@ -1868,25 +1406,11 @@ function renderUsers(
 
         element.innerHTML = `
             <div class="user-avatar">
-
-                ${
-                    user.avatar_url
-                        ? `
-                            <img
-                                src="${escapeHtml(
-                                    user.avatar_url
-                                )}"
-                                alt=""
-                            >
-                        `
-                        :
-                        escapeHtml(
-                            getInitial(
-                                user.display_name
-                            )
-                        )
-                }
-
+                ${escapeHtml(
+                    getInitial(
+                        user.display_name
+                    )
+                )}
             </div>
 
             <div class="user-info">
@@ -1976,9 +1500,6 @@ if (userSearch) {
     );
 }
 
-
-// Utilities
-
 function getInitial(
     name
 ) {
@@ -2009,7 +1530,9 @@ function escapeHtml(
 }
 
 
+// ------------------------------------------------------------
 // Conversations
+// ------------------------------------------------------------
 
 async function openConversation(
     user
@@ -2022,37 +1545,20 @@ async function openConversation(
         return;
     }
 
-    console.log(
-        "Opening conversation with:",
-        user
-    );
-
-    status.textContent =
-        "Opening conversation...";
+    if (status) {
+        status.textContent =
+            "Opening conversation...";
+    }
 
     if (conversationUser) {
 
         conversationUser.innerHTML = `
             <div class="conversation-avatar">
-
-                ${
-                    user.avatar_url
-                        ? `
-                            <img
-                                src="${escapeHtml(
-                                    user.avatar_url
-                                )}"
-                                alt=""
-                            >
-                        `
-                        :
-                        escapeHtml(
-                            getInitial(
-                                user.display_name
-                            )
-                        )
-                }
-
+                ${escapeHtml(
+                    getInitial(
+                        user.display_name
+                    )
+                )}
             </div>
 
             <div>
@@ -2092,8 +1598,10 @@ async function openConversation(
             error
         );
 
-        status.textContent =
-            "Conversation error";
+        if (status) {
+            status.textContent =
+                "Conversation error";
+        }
 
         messages.innerHTML = `
             <div class="empty">
@@ -2110,33 +1618,40 @@ async function openConversation(
     currentConversationUser =
         user;
 
-    markUserRecentlyMessaged(
-        user.id
-    );
-
     await stopRealtime();
 
     await loadConversationMessages();
 
     await startConversationRealtime();
 
-    messageInput.disabled =
-        false;
+    if (messageInput) {
 
-    messageForm
-        .querySelector(
-            "button"
-        )
-        .disabled =
-        false;
+        messageInput.disabled =
+            false;
 
-    messageInput.placeholder =
-        `Message ${user.display_name}...`;
+        messageInput.placeholder =
+            `Message ${user.display_name}...`;
 
-    messageInput.focus();
+        messageInput.focus();
+    }
 
-    status.textContent =
-        "Connected";
+    if (messageForm) {
+
+        const button =
+            messageForm.querySelector(
+                "button"
+            );
+
+        if (button) {
+            button.disabled =
+                false;
+        }
+    }
+
+    if (status) {
+        status.textContent =
+            "Connected";
+    }
 }
 
 async function loadConversationMessages() {
@@ -2313,7 +1828,9 @@ function addMessage(
 }
 
 
-// Messaging
+// ------------------------------------------------------------
+// Sending messages
+// ------------------------------------------------------------
 
 async function sendMessage(
     content
@@ -2332,7 +1849,6 @@ async function sendMessage(
         await client
             .from("messages")
             .insert({
-
                 user_id:
                     currentUser.id,
 
@@ -2349,8 +1865,10 @@ async function sendMessage(
             error
         );
 
-        status.textContent =
-            "Send failed";
+        if (status) {
+            status.textContent =
+                "Send failed";
+        }
 
         return false;
     }
@@ -2382,8 +1900,10 @@ if (messageForm) {
                     "button"
                 );
 
-            button.disabled =
-                true;
+            if (button) {
+                button.disabled =
+                    true;
+            }
 
             const success =
                 await sendMessage(
@@ -2398,14 +1918,18 @@ if (messageForm) {
                 messageInput.focus();
             }
 
-            button.disabled =
-                false;
+            if (button) {
+                button.disabled =
+                    false;
+            }
         }
     );
 }
 
 
+// ------------------------------------------------------------
 // Realtime
+// ------------------------------------------------------------
 
 async function startConversationRealtime() {
 
@@ -2442,11 +1966,6 @@ async function startConversationRealtime() {
                     payload
                 ) => {
 
-                    console.log(
-                        "CONVERSATION REALTIME:",
-                        payload
-                    );
-
                     if (
                         payload.new
                             .conversation_id !==
@@ -2477,18 +1996,6 @@ async function startConversationRealtime() {
 
                         profile
                     });
-
-                    // Keep the active conversation near the top.
-                    if (
-                        currentConversationUser &&
-                        payload.new.user_id ===
-                            currentUser?.id
-                    ) {
-
-                        markUserRecentlyMessaged(
-                            currentConversationUser.id
-                        );
-                    }
                 }
             )
             .subscribe(
@@ -2497,22 +2004,25 @@ async function startConversationRealtime() {
                 ) => {
 
                     console.log(
-                        "REALTIME STATUS:",
+                        "REALTIME:",
                         subscriptionStatus
                     );
 
-                    if (
-                        subscriptionStatus ===
-                        "SUBSCRIBED"
-                    ) {
+                    if (status) {
 
-                        status.textContent =
-                            "Connected";
+                        if (
+                            subscriptionStatus ===
+                            "SUBSCRIBED"
+                        ) {
 
-                    } else {
+                            status.textContent =
+                                "Connected";
 
-                        status.textContent =
-                            subscriptionStatus;
+                        } else {
+
+                            status.textContent =
+                                subscriptionStatus;
+                        }
                     }
                 }
             );
@@ -2533,7 +2043,9 @@ async function stopRealtime() {
 }
 
 
+// ------------------------------------------------------------
 // Start chat
+// ------------------------------------------------------------
 
 async function startChat() {
 
@@ -2544,39 +2056,59 @@ async function startChat() {
         return;
     }
 
-    currentUserElement.textContent =
-        currentProfile.display_name;
+    if (currentUserElement) {
 
-    updateCurrentUserAvatar();
+        currentUserElement.textContent =
+            currentProfile.display_name;
+    }
 
     showChatScreen();
 
     await loadUsers();
 
-    messages.innerHTML = `
-        <div class="empty">
-            Select a user to start a conversation.
-        </div>
-    `;
+    if (messages) {
 
-    messageInput.disabled =
-        true;
+        messages.innerHTML = `
+            <div class="empty">
+                Select a user to start a conversation.
+            </div>
+        `;
+    }
 
-    messageForm
-        .querySelector(
-            "button"
-        )
-        .disabled =
-        true;
+    if (messageInput) {
+
+        messageInput.disabled =
+            true;
+
+        messageInput.placeholder =
+            "Select a conversation...";
+    }
+
+    if (messageForm) {
+
+        const button =
+            messageForm.querySelector(
+                "button"
+            );
+
+        if (button) {
+            button.disabled =
+                true;
+        }
+    }
 
     await stopRealtime();
 
-    status.textContent =
-        "Ready";
+    if (status) {
+        status.textContent =
+            "Ready";
+    }
 }
 
 
+// ------------------------------------------------------------
 // Logout
+// ------------------------------------------------------------
 
 if (logoutButton) {
 
@@ -2587,8 +2119,6 @@ if (logoutButton) {
             await stopRealtime();
 
             closeGooglePopup();
-
-            closeProfileSettingsPanel();
 
             const {
                 error
@@ -2620,10 +2150,10 @@ if (logoutButton) {
             allUsers =
                 [];
 
-            recentUserIds =
-                [];
-
             displayedMessageIds.clear();
+
+            editingProfile =
+                false;
 
             if (messages) {
 
@@ -2640,13 +2170,11 @@ if (logoutButton) {
 }
 
 
+// ------------------------------------------------------------
 // Session
+// ------------------------------------------------------------
 
 async function checkSession() {
-
-    console.log(
-        "Checking session..."
-    );
 
     const {
         data,
@@ -2671,20 +2199,12 @@ async function checkSession() {
         data.session
     ) {
 
-        console.log(
-            "Existing session found."
-        );
-
         currentUser =
             data.session.user;
 
         await initializeUser();
 
     } else {
-
-        console.log(
-            "No active session."
-        );
 
         showLoginScreen();
     }
@@ -2713,9 +2233,7 @@ client.auth.onAuthStateChange(
 
             setTimeout(
                 () => {
-
                     initializeUser();
-
                 },
                 0
             );

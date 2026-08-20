@@ -4,6 +4,12 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
     "sb_publishable_LntMHz6esPpIJszjXzzAzw_W-FVSljU";
 
+const AVATAR_BUCKET =
+    "avatars";
+
+const MAX_AVATAR_SIZE =
+    5 * 1024 * 1024;
+
 const client =
     window.supabase.createClient(
         SUPABASE_URL,
@@ -35,11 +41,15 @@ let googleAuthTimeout = null;
 let initializingUser = false;
 let editingProfile = false;
 
+let selectedAvatarFile = null;
+
+
 // Garbage code snippet, but it keeps the old HTML compatible.
 const globalChatButton =
     document.getElementById(
         "global-chat-button"
     );
+
 
 // Screens
 
@@ -58,12 +68,14 @@ const chatScreen =
         "chat-screen"
     );
 
+
 // Authentication
 
 const googleLogin =
     document.getElementById(
         "google-login"
     );
+
 
 // Profile
 
@@ -82,9 +94,6 @@ const profileDisplayName =
         "profile-display-name"
     );
 
-// Profile customization buttons.
-// Supports either name so we don't have to care which one index.html uses.
-
 const profileCustomizeButton =
     document.getElementById(
         "profile-customize-button"
@@ -95,6 +104,7 @@ const profileCustomizeButton =
     document.getElementById(
         "profile-button"
     );
+
 
 // Errors
 
@@ -107,6 +117,7 @@ const profileError =
     document.getElementById(
         "profile-error"
     );
+
 
 // Chat
 
@@ -155,6 +166,7 @@ const logoutButton =
         "logout-button"
     );
 
+
 // Mobile
 
 const userSidebar =
@@ -173,6 +185,13 @@ const mobileSidebarBackdrop =
     );
 
 
+// Profile picture picker
+
+let profileAvatarInput = null;
+let profileAvatarPreview = null;
+let profileAvatarRemoveButton = null;
+
+
 // ------------------------------------------------------------
 // Mobile sidebar
 // ------------------------------------------------------------
@@ -183,6 +202,7 @@ function isMobile() {
         "(max-width: 700px)"
     ).matches;
 }
+
 
 function openMobileSidebar() {
 
@@ -213,6 +233,7 @@ function openMobileSidebar() {
     }
 }
 
+
 function closeMobileSidebar() {
 
     if (!userSidebar) {
@@ -239,6 +260,7 @@ function closeMobileSidebar() {
     }
 }
 
+
 function toggleMobileSidebar() {
 
     if (!isMobile()) {
@@ -260,6 +282,7 @@ function toggleMobileSidebar() {
     }
 }
 
+
 if (mobileChatSelector) {
 
     mobileChatSelector.addEventListener(
@@ -267,6 +290,7 @@ if (mobileChatSelector) {
         toggleMobileSidebar
     );
 }
+
 
 if (mobileSidebarBackdrop) {
 
@@ -302,6 +326,7 @@ function hideAllScreens() {
     }
 }
 
+
 function showLoginScreen() {
 
     hideAllScreens();
@@ -315,6 +340,7 @@ function showLoginScreen() {
     resetGoogleButton();
 }
 
+
 function showProfileScreen() {
 
     hideAllScreens();
@@ -324,7 +350,10 @@ function showProfileScreen() {
             "hidden"
         );
     }
+
+    ensureProfileAvatarPicker();
 }
+
 
 function showChatScreen() {
 
@@ -357,6 +386,7 @@ function showError(
     element.style.display =
         "block";
 }
+
 
 function clearError(
     element
@@ -398,6 +428,7 @@ function resetGoogleButton() {
     `;
 }
 
+
 function setGoogleButtonLoading() {
 
     if (!googleLogin) {
@@ -417,6 +448,7 @@ function setGoogleButtonLoading() {
         </span>
     `;
 }
+
 
 async function startGoogleLogin() {
 
@@ -568,6 +600,7 @@ async function startGoogleLogin() {
     startGooglePopupWatcher();
 }
 
+
 function startGooglePopupWatcher() {
 
     clearInterval(
@@ -614,12 +647,6 @@ function startGooglePopupWatcher() {
                     await client.auth.getSession();
 
                 if (error) {
-
-                    console.error(
-                        "SESSION CHECK ERROR:",
-                        error
-                    );
-
                     return;
                 }
 
@@ -648,6 +675,7 @@ function startGooglePopupWatcher() {
             500
         );
 }
+
 
 function closeGooglePopup() {
 
@@ -682,6 +710,7 @@ function closeGooglePopup() {
     googleAuthPopup =
         null;
 }
+
 
 if (googleLogin) {
 
@@ -729,11 +758,6 @@ window.addEventListener(
                 await client.auth.getSession();
 
             if (error) {
-
-                console.error(
-                    "SESSION LOAD ERROR:",
-                    error
-                );
 
                 showError(
                     authError,
@@ -829,6 +853,7 @@ async function loadProfile() {
     return data;
 }
 
+
 function createUsernameSuggestion(
     metadata
 ) {
@@ -862,13 +887,508 @@ function createUsernameSuggestion(
     );
 }
 
+
+// ------------------------------------------------------------
+// Profile picture handling
+// ------------------------------------------------------------
+
+function ensureProfileAvatarPicker() {
+
+    if (
+        !profileForm ||
+        profileAvatarInput
+    ) {
+        return;
+    }
+
+    const wrapper =
+        document.createElement(
+            "div"
+        );
+
+    wrapper.id =
+        "profile-avatar-picker";
+
+    wrapper.style.cssText = `
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:10px;
+        margin-bottom:16px;
+    `;
+
+    const preview =
+        document.createElement(
+            "div"
+        );
+
+    preview.className =
+        "profile-avatar-preview";
+
+    preview.style.cssText = `
+        width:76px;
+        height:76px;
+        border-radius:50%;
+        overflow:hidden;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#171025;
+        border:1px solid #30223d;
+        color:#ff78c8;
+        font-size:24px;
+        font-weight:700;
+        font-family:ui-monospace, monospace;
+    `;
+
+    profileAvatarPreview =
+        preview;
+
+    const label =
+        document.createElement(
+            "label"
+        );
+
+    label.textContent =
+        "Choose profile picture";
+
+    label.style.cssText = `
+        cursor:pointer;
+        color:#ff78c8;
+        font-size:12px;
+        font-family:ui-monospace, monospace;
+    `;
+
+    const input =
+        document.createElement(
+            "input"
+        );
+
+    input.type =
+        "file";
+
+    input.accept =
+        "image/png,image/jpeg,image/webp,image/gif";
+
+    input.id =
+        "profile-avatar";
+
+    input.style.display =
+        "none";
+
+    profileAvatarInput =
+        input;
+
+    label.appendChild(
+        input
+    );
+
+    const removeButton =
+        document.createElement(
+            "button"
+        );
+
+    removeButton.type =
+        "button";
+
+    removeButton.textContent =
+        "Remove picture";
+
+    removeButton.style.cssText = `
+        display:none;
+        border:0;
+        background:none;
+        color:#aa9caf;
+        cursor:pointer;
+        font-size:11px;
+    `;
+
+    profileAvatarRemoveButton =
+        removeButton;
+
+    input.addEventListener(
+        "change",
+        handleAvatarSelection
+    );
+
+    removeButton.addEventListener(
+        "click",
+        () => {
+
+            selectedAvatarFile =
+                null;
+
+            profileAvatarInput.value =
+                "";
+
+            profileAvatarPreview.innerHTML =
+                "";
+
+            profileAvatarPreview.textContent =
+                getInitial(
+                    profileDisplayName?.value ||
+                    currentProfile?.display_name
+                );
+
+            profileAvatarRemoveButton.style.display =
+                currentProfile?.avatar_url
+                    ? "block"
+                    : "none";
+        }
+    );
+
+    wrapper.appendChild(
+        preview
+    );
+
+    wrapper.appendChild(
+        label
+    );
+
+    wrapper.appendChild(
+        removeButton
+    );
+
+    const firstInput =
+        profileUsername;
+
+    if (firstInput) {
+
+        profileForm.insertBefore(
+            wrapper,
+            firstInput
+        );
+
+    } else {
+
+        profileForm.prepend(
+            wrapper
+        );
+    }
+}
+
+
+function handleAvatarSelection(
+    event
+) {
+
+    const file =
+        event.target.files?.[0];
+
+    if (!file) {
+        return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+
+        showError(
+            profileError,
+            "Please choose an image file."
+        );
+
+        event.target.value =
+            "";
+
+        return;
+    }
+
+    if (
+        file.size >
+        MAX_AVATAR_SIZE
+    ) {
+
+        showError(
+            profileError,
+            "Profile pictures must be smaller than 5 MB."
+        );
+
+        event.target.value =
+            "";
+
+        return;
+    }
+
+    clearError(
+        profileError
+    );
+
+    selectedAvatarFile =
+        file;
+
+    const reader =
+        new FileReader();
+
+    reader.onload =
+        () => {
+
+            if (
+                !profileAvatarPreview
+            ) {
+                return;
+            }
+
+            profileAvatarPreview.innerHTML = `
+                <img
+                    src="${reader.result}"
+                    alt=""
+                    style="
+                        width:100%;
+                        height:100%;
+                        object-fit:cover;
+                    "
+                >
+            `;
+
+            if (
+                profileAvatarRemoveButton
+            ) {
+
+                profileAvatarRemoveButton.style.display =
+                    "block";
+            }
+        };
+
+    reader.readAsDataURL(
+        file
+    );
+}
+
+
+function updateProfileAvatarPreview(
+    profile
+) {
+
+    ensureProfileAvatarPicker();
+
+    if (
+        !profileAvatarPreview
+    ) {
+        return;
+    }
+
+    if (
+        selectedAvatarFile
+    ) {
+        return;
+    }
+
+    const avatarUrl =
+        profile?.avatar_url;
+
+    if (avatarUrl) {
+
+        profileAvatarPreview.innerHTML = `
+            <img
+                src="${escapeHtml(avatarUrl)}"
+                alt=""
+                style="
+                    width:100%;
+                    height:100%;
+                    object-fit:cover;
+                "
+            >
+        `;
+
+        if (
+            profileAvatarRemoveButton
+        ) {
+
+            profileAvatarRemoveButton.style.display =
+                "block";
+        }
+
+        return;
+    }
+
+    const metadata =
+        currentUser?.user_metadata ||
+        {};
+
+    const googleAvatar =
+        metadata.avatar_url ||
+        metadata.picture ||
+        "";
+
+    if (googleAvatar) {
+
+        profileAvatarPreview.innerHTML = `
+            <img
+                src="${escapeHtml(googleAvatar)}"
+                alt=""
+                style="
+                    width:100%;
+                    height:100%;
+                    object-fit:cover;
+                "
+            >
+        `;
+
+        return;
+    }
+
+    profileAvatarPreview.textContent =
+        getInitial(
+            profile?.display_name ||
+            metadata.full_name ||
+            metadata.name
+        );
+
+    if (
+        profileAvatarRemoveButton
+    ) {
+
+        profileAvatarRemoveButton.style.display =
+            "none";
+    }
+}
+
+
+async function uploadAvatar(
+    file
+) {
+
+    if (
+        !currentUser ||
+        !file
+    ) {
+        return null;
+    }
+
+    const extension =
+        (
+            file.name
+                .split(".")
+                .pop() ||
+            "jpg"
+        )
+            .toLowerCase()
+            .replace(
+                /[^a-z0-9]/g,
+                ""
+            );
+
+    const path =
+        `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
+
+    const {
+        error
+    } =
+        await client.storage
+            .from(
+                AVATAR_BUCKET
+            )
+            .upload(
+                path,
+                file,
+                {
+                    cacheControl:
+                        "3600",
+
+                    contentType:
+                        file.type,
+
+                    upsert:
+                        false
+                }
+            );
+
+    if (error) {
+
+        console.error(
+            "AVATAR UPLOAD ERROR:",
+            error
+        );
+
+        return null;
+    }
+
+    const {
+        data
+    } =
+        client.storage
+            .from(
+                AVATAR_BUCKET
+            )
+            .getPublicUrl(
+                path
+            );
+
+    return data?.publicUrl ||
+        null;
+}
+
+
+async function deleteAvatar(
+    avatarUrl
+) {
+
+    if (
+        !avatarUrl ||
+        !currentUser
+    ) {
+        return;
+    }
+
+    try {
+
+        const marker =
+            `/storage/v1/object/public/${AVATAR_BUCKET}/`;
+
+        const index =
+            avatarUrl.indexOf(
+                marker
+            );
+
+        if (index === -1) {
+            return;
+        }
+
+        const path =
+            decodeURIComponent(
+                avatarUrl.substring(
+                    index +
+                    marker.length
+                )
+            );
+
+        if (!path.startsWith(
+            `${currentUser.id}/`
+        )) {
+            return;
+        }
+
+        await client.storage
+            .from(
+                AVATAR_BUCKET
+            )
+            .remove([
+                path
+            ]);
+
+    } catch (error) {
+
+        console.warn(
+            "AVATAR DELETE FAILED:",
+            error
+        );
+    }
+}
+
+
 function prepareProfileForm(
     profile
 ) {
 
-    if (!profileUsername ||
-        !profileDisplayName) {
-        return;
+    ensureProfileAvatarPicker();
+
+    selectedAvatarFile =
+        null;
+
+    if (
+        profileAvatarInput
+    ) {
+        profileAvatarInput.value =
+            "";
     }
 
     if (profile) {
@@ -877,16 +1397,20 @@ function prepareProfileForm(
             profile.username || "";
 
         profileDisplayName.value =
-            profile.display_name === "New User"
+            profile.display_name ===
+                "New User"
                 ? ""
-                : (
-                    profile.display_name || ""
+                :
+                (
+                    profile.display_name ||
+                    ""
                 );
 
     } else {
 
         const metadata =
-            currentUser?.user_metadata || {};
+            currentUser?.user_metadata ||
+            {};
 
         profileUsername.value =
             createUsernameSuggestion(
@@ -898,7 +1422,12 @@ function prepareProfileForm(
             metadata.name ||
             "";
     }
+
+    updateProfileAvatarPreview(
+        profile
+    );
 }
+
 
 function openProfileEditor() {
 
@@ -906,7 +1435,8 @@ function openProfileEditor() {
         return;
     }
 
-    editingProfile = true;
+    editingProfile =
+        true;
 
     clearError(
         profileError
@@ -923,7 +1453,7 @@ function openProfileEditor() {
     }
 }
 
-// Profile button actually does something now.
+
 if (profileCustomizeButton) {
 
     profileCustomizeButton.addEventListener(
@@ -931,6 +1461,11 @@ if (profileCustomizeButton) {
         openProfileEditor
     );
 }
+
+
+// ------------------------------------------------------------
+// Initialize user
+// ------------------------------------------------------------
 
 async function initializeUser() {
 
@@ -951,7 +1486,8 @@ async function initializeUser() {
 
         if (!currentProfile) {
 
-            editingProfile = false;
+            editingProfile =
+                false;
 
             prepareProfileForm(
                 null
@@ -977,7 +1513,8 @@ async function initializeUser() {
                 "New User"
         ) {
 
-            editingProfile = false;
+            editingProfile =
+                false;
 
             prepareProfileForm(
                 currentProfile
@@ -1067,7 +1604,7 @@ if (profileForm) {
 
             const button =
                 profileForm.querySelector(
-                    "button"
+                    "button[type='submit']"
                 );
 
             if (button) {
@@ -1079,7 +1616,6 @@ if (profileForm) {
                     "Checking...";
             }
 
-            // Stupid shit: check first, then let the DB be the final authority.
             const {
                 data: existingUsername,
                 error: usernameCheckError
@@ -1119,7 +1655,8 @@ if (profileForm) {
 
             if (
                 existingUsername &&
-                existingUsername.id !== currentUser.id
+                existingUsername.id !==
+                    currentUser.id
             ) {
 
                 if (button) {
@@ -1142,6 +1679,59 @@ if (profileForm) {
                 return;
             }
 
+            let avatarUrl =
+                currentProfile?.avatar_url ||
+                null;
+
+            if (selectedAvatarFile) {
+
+                if (button) {
+                    button.textContent =
+                        "Uploading picture...";
+                }
+
+                const uploadedUrl =
+                    await uploadAvatar(
+                        selectedAvatarFile
+                    );
+
+                if (!uploadedUrl) {
+
+                    if (button) {
+
+                        button.disabled =
+                            false;
+
+                        button.textContent =
+                            "Continue";
+                    }
+
+                    showError(
+                        profileError,
+                        "Failed to upload profile picture. Make sure the avatars bucket exists."
+                    );
+
+                    return;
+                }
+
+                const oldAvatarUrl =
+                    avatarUrl;
+
+                avatarUrl =
+                    uploadedUrl;
+
+                if (
+                    oldAvatarUrl &&
+                    oldAvatarUrl !==
+                        avatarUrl
+                ) {
+
+                    await deleteAvatar(
+                        oldAvatarUrl
+                    );
+                }
+            }
+
             if (button) {
                 button.textContent =
                     "Saving...";
@@ -1150,16 +1740,25 @@ if (profileForm) {
             let data;
             let error;
 
+            const profileData = {
+
+                username,
+
+                display_name:
+                    displayName,
+
+                avatar_url:
+                    avatarUrl
+            };
+
             if (currentProfile) {
 
                 const result =
                     await client
                         .from("profiles")
-                        .update({
-                            username,
-                            display_name:
-                                displayName
-                        })
+                        .update(
+                            profileData
+                        )
                         .eq(
                             "id",
                             currentUser.id
@@ -1179,13 +1778,11 @@ if (profileForm) {
                     await client
                         .from("profiles")
                         .insert({
+
                             id:
                                 currentUser.id,
 
-                            username,
-
-                            display_name:
-                                displayName
+                            ...profileData
                         })
                         .select()
                         .single();
@@ -1249,7 +1846,6 @@ if (profileForm) {
                         return;
                     }
 
-                    // Don't claim the account is broken when we're just editing.
                     if (currentProfile) {
 
                         showError(
@@ -1282,6 +1878,9 @@ if (profileForm) {
 
             editingProfile =
                 false;
+
+            selectedAvatarFile =
+                null;
 
             if (button) {
 
@@ -1361,6 +1960,47 @@ async function loadUsers() {
     );
 }
 
+
+function getAvatarMarkup(
+    user,
+    className = "user-avatar"
+) {
+
+    if (
+        user &&
+        user.avatar_url
+    ) {
+
+        return `
+            <div class="${className}">
+                <img
+                    src="${escapeHtml(user.avatar_url)}"
+                    alt=""
+                    loading="lazy"
+                    style="
+                        width:100%;
+                        height:100%;
+                        object-fit:cover;
+                        border-radius:50%;
+                        display:block;
+                    "
+                >
+            </div>
+        `;
+    }
+
+    return `
+        <div class="${className}">
+            ${escapeHtml(
+                getInitial(
+                    user?.display_name
+                )
+            )}
+        </div>
+    `;
+}
+
+
 function renderUsers(
     users
 ) {
@@ -1405,13 +2045,8 @@ function renderUsers(
             user.id;
 
         element.innerHTML = `
-            <div class="user-avatar">
-                ${escapeHtml(
-                    getInitial(
-                        user.display_name
-                    )
-                )}
-            </div>
+
+            ${getAvatarMarkup(user)}
 
             <div class="user-info">
 
@@ -1447,6 +2082,7 @@ function renderUsers(
         );
     }
 }
+
 
 if (userSearch) {
 
@@ -1500,6 +2136,7 @@ if (userSearch) {
     );
 }
 
+
 function getInitial(
     name
 ) {
@@ -1513,6 +2150,7 @@ function getInitial(
         .charAt(0)
         .toUpperCase();
 }
+
 
 function escapeHtml(
     value
@@ -1553,13 +2191,11 @@ async function openConversation(
     if (conversationUser) {
 
         conversationUser.innerHTML = `
-            <div class="conversation-avatar">
-                ${escapeHtml(
-                    getInitial(
-                        user.display_name
-                    )
-                )}
-            </div>
+
+            ${getAvatarMarkup(
+                user,
+                "conversation-avatar"
+            )}
 
             <div>
 
@@ -1654,6 +2290,7 @@ async function openConversation(
     }
 }
 
+
 async function loadConversationMessages() {
 
     if (!currentConversationId) {
@@ -1739,6 +2376,7 @@ async function loadConversationMessages() {
         );
     }
 }
+
 
 function addMessage(
     message
@@ -1849,6 +2487,7 @@ async function sendMessage(
         await client
             .from("messages")
             .insert({
+
                 user_id:
                     currentUser.id,
 
@@ -1875,6 +2514,7 @@ async function sendMessage(
 
     return true;
 }
+
 
 if (messageForm) {
 
@@ -2008,25 +2648,27 @@ async function startConversationRealtime() {
                         subscriptionStatus
                     );
 
-                    if (status) {
+                    if (!status) {
+                        return;
+                    }
 
-                        if (
-                            subscriptionStatus ===
-                            "SUBSCRIBED"
-                        ) {
+                    if (
+                        subscriptionStatus ===
+                        "SUBSCRIBED"
+                    ) {
 
-                            status.textContent =
-                                "Connected";
+                        status.textContent =
+                            "Connected";
 
-                        } else {
+                    } else {
 
-                            status.textContent =
-                                subscriptionStatus;
-                        }
+                        status.textContent =
+                            subscriptionStatus;
                     }
                 }
             );
 }
+
 
 async function stopRealtime() {
 
@@ -2152,8 +2794,8 @@ if (logoutButton) {
 
             displayedMessageIds.clear();
 
-            editingProfile =
-                false;
+            selectedAvatarFile =
+                null;
 
             if (messages) {
 
@@ -2210,6 +2852,7 @@ async function checkSession() {
     }
 }
 
+
 client.auth.onAuthStateChange(
     (
         event,
@@ -2263,8 +2906,14 @@ client.auth.onAuthStateChange(
 );
 
 
+// ------------------------------------------------------------
+// Startup
+// ------------------------------------------------------------
+
 console.log(
     "Starting OpenTalk..."
 );
+
+ensureProfileAvatarPicker();
 
 checkSession();

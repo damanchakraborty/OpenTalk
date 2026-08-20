@@ -1,191 +1,62 @@
-const SUPABASE_URL =
-    "https://vkelkgabycpxojybguvj.supabase.co";
+const SUPABASE_URL = "https://vkelkgabycpxojybguvj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_LntMHz6esPpIJszjXzzAzw_W-FVSljU";
+const AVATAR_BUCKET = "avatars";
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
 
-const SUPABASE_KEY =
-    "sb_publishable_LntMHz6esPpIJszjXzzAzw_W-FVSljU";
-
-const AVATAR_BUCKET =
-    "avatars";
-
-const MAX_AVATAR_SIZE =
-    5 * 1024 * 1024;
-
-const client =
-    window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
-
-const REDIRECT_URL =
-    new URL(
-        "auth-callback.html",
-        window.location.href
-    ).href;
+const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const REDIRECT_URL = new URL("auth-callback.html", window.location.href).href;
 
 let currentUser = null;
 let currentProfile = null;
-
 let currentConversationId = null;
 let currentConversationUser = null;
-
 let realtimeChannel = null;
-
 let allUsers = [];
-
-const displayedMessageIds =
-    new Set();
-
+let initializingUser = false;
+let editingProfile = false;
+let selectedAvatarFile = null;
 let googleAuthPopup = null;
 let googleAuthTimeout = null;
 
-let initializingUser = false;
-let editingProfile = false;
+const displayedMessageIds = new Set();
+const avatarObjectUrls = new Map();
 
-let selectedAvatarFile = null;
+const $ = id => document.getElementById(id);
 
+const authScreen = $("auth-screen");
+const profileScreen = $("profile-screen");
+const chatScreen = $("chat-screen");
 
-// Garbage code snippet, but it keeps the old HTML compatible.
-const globalChatButton =
-    document.getElementById(
-        "global-chat-button"
-    );
+const googleLogin = $("google-login");
 
-
-// Screens
-
-const authScreen =
-    document.getElementById(
-        "auth-screen"
-    );
-
-const profileScreen =
-    document.getElementById(
-        "profile-screen"
-    );
-
-const chatScreen =
-    document.getElementById(
-        "chat-screen"
-    );
-
-
-// Authentication
-
-const googleLogin =
-    document.getElementById(
-        "google-login"
-    );
-
-
-// Profile
-
-const profileForm =
-    document.getElementById(
-        "profile-form"
-    );
-
-const profileUsername =
-    document.getElementById(
-        "profile-username"
-    );
-
-const profileDisplayName =
-    document.getElementById(
-        "profile-display-name"
-    );
+const profileForm = $("profile-form");
+const profileUsername = $("profile-username");
+const profileDisplayName = $("profile-display-name");
 
 const profileCustomizeButton =
-    document.getElementById(
-        "profile-customize-button"
-    ) ||
-    document.getElementById(
-        "edit-profile-button"
-    ) ||
-    document.getElementById(
-        "profile-button"
-    );
+    $("profile-customize-button") ||
+    $("edit-profile-button") ||
+    $("profile-button");
 
+const authError = $("auth-error");
+const profileError = $("profile-error");
 
-// Errors
+const status = $("status");
+const currentUserElement = $("current-user");
+const userSearch = $("user-search");
+const userList = $("user-list");
+const conversationUser = $("conversation-user");
+const messages = $("messages");
+const messageForm = $("message-form");
+const messageInput = $("message");
+const logoutButton = $("logout-button");
 
-const authError =
-    document.getElementById(
-        "auth-error"
-    );
+const userSidebar = $("user-sidebar");
+const mobileChatSelector = $("mobile-chat-selector");
+const mobileSidebarBackdrop = $("mobile-sidebar-backdrop");
 
-const profileError =
-    document.getElementById(
-        "profile-error"
-    );
-
-
-// Chat
-
-const status =
-    document.getElementById(
-        "status"
-    );
-
-const currentUserElement =
-    document.getElementById(
-        "current-user"
-    );
-
-const userSearch =
-    document.getElementById(
-        "user-search"
-    );
-
-const userList =
-    document.getElementById(
-        "user-list"
-    );
-
-const conversationUser =
-    document.getElementById(
-        "conversation-user"
-    );
-
-const messages =
-    document.getElementById(
-        "messages"
-    );
-
-const messageForm =
-    document.getElementById(
-        "message-form"
-    );
-
-const messageInput =
-    document.getElementById(
-        "message"
-    );
-
-const logoutButton =
-    document.getElementById(
-        "logout-button"
-    );
-
-
-// Mobile
-
-const userSidebar =
-    document.getElementById(
-        "user-sidebar"
-    );
-
-const mobileChatSelector =
-    document.getElementById(
-        "mobile-chat-selector"
-    );
-
-const mobileSidebarBackdrop =
-    document.getElementById(
-        "mobile-sidebar-backdrop"
-    );
-
-
-// Profile picture picker
+const globalChatButton = $("global-chat-button");
+// stupid shit, leave global chat alone for now
 
 let profileAvatarInput = null;
 let profileAvatarPreview = null;
@@ -193,46 +64,30 @@ let profileAvatarRemoveButton = null;
 
 
 // ------------------------------------------------------------
-// Mobile sidebar
+// Mobile
 // ------------------------------------------------------------
 
 function isMobile() {
-
-    return window.matchMedia(
-        "(max-width: 700px)"
-    ).matches;
+    return window.matchMedia("(max-width: 700px)").matches;
 }
-
 
 function openMobileSidebar() {
 
-    if (
-        !isMobile() ||
-        !userSidebar
-    ) {
+    if (!isMobile() || !userSidebar) {
         return;
     }
 
-    userSidebar.classList.add(
-        "mobile-open"
+    userSidebar.classList.add("mobile-open");
+
+    mobileSidebarBackdrop?.classList.add(
+        "mobile-visible"
     );
 
-    if (mobileSidebarBackdrop) {
-
-        mobileSidebarBackdrop.classList.add(
-            "mobile-visible"
-        );
-    }
-
-    if (mobileChatSelector) {
-
-        mobileChatSelector.setAttribute(
-            "aria-expanded",
-            "true"
-        );
-    }
+    mobileChatSelector?.setAttribute(
+        "aria-expanded",
+        "true"
+    );
 }
-
 
 function closeMobileSidebar() {
 
@@ -244,22 +99,15 @@ function closeMobileSidebar() {
         "mobile-open"
     );
 
-    if (mobileSidebarBackdrop) {
+    mobileSidebarBackdrop?.classList.remove(
+        "mobile-visible"
+    );
 
-        mobileSidebarBackdrop.classList.remove(
-            "mobile-visible"
-        );
-    }
-
-    if (mobileChatSelector) {
-
-        mobileChatSelector.setAttribute(
-            "aria-expanded",
-            "false"
-        );
-    }
+    mobileChatSelector?.setAttribute(
+        "aria-expanded",
+        "false"
+    );
 }
-
 
 function toggleMobileSidebar() {
 
@@ -268,37 +116,40 @@ function toggleMobileSidebar() {
     }
 
     if (
-        userSidebar &&
-        userSidebar.classList.contains(
+        userSidebar?.classList.contains(
             "mobile-open"
         )
     ) {
-
         closeMobileSidebar();
-
     } else {
-
         openMobileSidebar();
     }
 }
 
+mobileChatSelector?.addEventListener(
+    "click",
+    toggleMobileSidebar
+);
 
-if (mobileChatSelector) {
-
-    mobileChatSelector.addEventListener(
-        "click",
-        toggleMobileSidebar
-    );
-}
+mobileSidebarBackdrop?.addEventListener(
+    "click",
+    closeMobileSidebar
+);
 
 
-if (mobileSidebarBackdrop) {
+// Global chat intentionally untouched.
 
-    mobileSidebarBackdrop.addEventListener(
-        "click",
-        closeMobileSidebar
-    );
-}
+globalChatButton?.addEventListener(
+    "click",
+    () => {
+
+        closeMobileSidebar();
+
+        globalChatButton.classList.add(
+            "active"
+        );
+    }
+);
 
 
 // ------------------------------------------------------------
@@ -307,63 +158,40 @@ if (mobileSidebarBackdrop) {
 
 function hideAllScreens() {
 
-    if (authScreen) {
-        authScreen.classList.add(
-            "hidden"
-        );
-    }
-
-    if (profileScreen) {
-        profileScreen.classList.add(
-            "hidden"
-        );
-    }
-
-    if (chatScreen) {
-        chatScreen.classList.add(
-            "hidden"
-        );
-    }
+    authScreen?.classList.add("hidden");
+    profileScreen?.classList.add("hidden");
+    chatScreen?.classList.add("hidden");
 }
-
 
 function showLoginScreen() {
 
     hideAllScreens();
 
-    if (authScreen) {
-        authScreen.classList.remove(
-            "hidden"
-        );
-    }
+    authScreen?.classList.remove(
+        "hidden"
+    );
 
     resetGoogleButton();
 }
-
 
 function showProfileScreen() {
 
     hideAllScreens();
 
-    if (profileScreen) {
-        profileScreen.classList.remove(
-            "hidden"
-        );
-    }
+    profileScreen?.classList.remove(
+        "hidden"
+    );
 
     ensureProfileAvatarPicker();
 }
-
 
 function showChatScreen() {
 
     hideAllScreens();
 
-    if (chatScreen) {
-        chatScreen.classList.remove(
-            "hidden"
-        );
-    }
+    chatScreen?.classList.remove(
+        "hidden"
+    );
 }
 
 
@@ -380,27 +208,18 @@ function showError(
         return;
     }
 
-    element.textContent =
-        message;
-
-    element.style.display =
-        "block";
+    element.textContent = message;
+    element.style.display = "block";
 }
 
-
-function clearError(
-    element
-) {
+function clearError(element) {
 
     if (!element) {
         return;
     }
 
-    element.textContent =
-        "";
-
-    element.style.display =
-        "none";
+    element.textContent = "";
+    element.style.display = "none";
 }
 
 
@@ -414,8 +233,7 @@ function resetGoogleButton() {
         return;
     }
 
-    googleLogin.disabled =
-        false;
+    googleLogin.disabled = false;
 
     googleLogin.innerHTML = `
         <span class="google-icon">
@@ -428,15 +246,13 @@ function resetGoogleButton() {
     `;
 }
 
-
 function setGoogleButtonLoading() {
 
     if (!googleLogin) {
         return;
     }
 
-    googleLogin.disabled =
-        true;
+    googleLogin.disabled = true;
 
     googleLogin.innerHTML = `
         <span class="google-icon">
@@ -449,16 +265,13 @@ function setGoogleButtonLoading() {
     `;
 }
 
-
 async function startGoogleLogin() {
 
     if (!googleLogin) {
         return;
     }
 
-    clearError(
-        authError
-    );
+    clearError(authError);
 
     if (
         googleAuthPopup &&
@@ -521,12 +334,9 @@ async function startGoogleLogin() {
         error
     } =
         await client.auth.signInWithOAuth({
-
-            provider:
-                "google",
+            provider: "google",
 
             options: {
-
                 redirectTo:
                     REDIRECT_URL,
 
@@ -535,7 +345,10 @@ async function startGoogleLogin() {
             }
         });
 
-    if (error) {
+    if (
+        error ||
+        !data?.url
+    ) {
 
         console.error(
             "GOOGLE OAUTH ERROR:",
@@ -546,23 +359,7 @@ async function startGoogleLogin() {
 
         showError(
             authError,
-            error.message
-        );
-
-        resetGoogleButton();
-
-        return;
-    }
-
-    if (
-        !data ||
-        !data.url
-    ) {
-
-        closeGooglePopup();
-
-        showError(
-            authError,
+            error?.message ||
             "Failed to start Google authentication."
         );
 
@@ -600,7 +397,6 @@ async function startGoogleLogin() {
     startGooglePopupWatcher();
 }
 
-
 function startGooglePopupWatcher() {
 
     clearInterval(
@@ -612,28 +408,23 @@ function startGooglePopupWatcher() {
             async () => {
 
                 if (
-                    googleAuthPopup &&
-                    googleAuthPopup.closed
+                    googleAuthPopup?.closed
                 ) {
 
                     clearInterval(
                         googleAuthTimeout
                     );
 
-                    googleAuthTimeout =
-                        null;
+                    googleAuthTimeout = null;
+                    googleAuthPopup = null;
 
-                    googleAuthPopup =
-                        null;
+                    if (!currentUser) {
 
-                    if (currentUser) {
-                        return;
+                        showError(
+                            authError,
+                            "Google sign-in was cancelled."
+                        );
                     }
-
-                    showError(
-                        authError,
-                        "Google sign-in was cancelled."
-                    );
 
                     resetGoogleButton();
 
@@ -651,8 +442,7 @@ function startGooglePopupWatcher() {
                 }
 
                 if (
-                    data &&
-                    data.session &&
+                    data?.session &&
                     !currentUser
                 ) {
 
@@ -663,8 +453,7 @@ function startGooglePopupWatcher() {
                         googleAuthTimeout
                     );
 
-                    googleAuthTimeout =
-                        null;
+                    googleAuthTimeout = null;
 
                     closeGooglePopup();
 
@@ -676,18 +465,13 @@ function startGooglePopupWatcher() {
         );
 }
 
-
 function closeGooglePopup() {
 
-    if (googleAuthTimeout) {
+    clearInterval(
+        googleAuthTimeout
+    );
 
-        clearInterval(
-            googleAuthTimeout
-        );
-
-        googleAuthTimeout =
-            null;
-    }
+    googleAuthTimeout = null;
 
     if (
         googleAuthPopup &&
@@ -695,39 +479,26 @@ function closeGooglePopup() {
     ) {
 
         try {
-
             googleAuthPopup.close();
-
-        } catch (error) {
-
-            console.warn(
-                "Could not close Google popup:",
-                error
-            );
-        }
+        } catch {}
     }
 
-    googleAuthPopup =
-        null;
+    googleAuthPopup = null;
 }
 
-
-if (googleLogin) {
-
-    googleLogin.addEventListener(
-        "click",
-        startGoogleLogin
-    );
-}
+googleLogin?.addEventListener(
+    "click",
+    startGoogleLogin
+);
 
 
 // ------------------------------------------------------------
-// OAuth callback
+// Auth callback
 // ------------------------------------------------------------
 
 window.addEventListener(
     "message",
-    async (event) => {
+    async event => {
 
         if (
             event.origin !==
@@ -769,10 +540,7 @@ window.addEventListener(
                 return;
             }
 
-            if (
-                !data ||
-                !data.session
-            ) {
+            if (!data?.session) {
 
                 showError(
                     authError,
@@ -787,13 +555,9 @@ window.addEventListener(
             currentUser =
                 data.session.user;
 
-            clearError(
-                authError
-            );
+            clearError(authError);
 
             await initializeUser();
-
-            return;
         }
 
         if (
@@ -816,7 +580,7 @@ window.addEventListener(
 
 
 // ------------------------------------------------------------
-// Profiles
+// Profile
 // ------------------------------------------------------------
 
 async function loadProfile() {
@@ -853,9 +617,8 @@ async function loadProfile() {
     return data;
 }
 
-
 function createUsernameSuggestion(
-    metadata
+    metadata = {}
 ) {
 
     let value =
@@ -889,7 +652,7 @@ function createUsernameSuggestion(
 
 
 // ------------------------------------------------------------
-// Profile picture handling
+// Profile picture
 // ------------------------------------------------------------
 
 function ensureProfileAvatarPicker() {
@@ -909,23 +672,25 @@ function ensureProfileAvatarPicker() {
     wrapper.id =
         "profile-avatar-picker";
 
-    wrapper.style.cssText = `
+    wrapper.style.cssText =
+        `
         display:flex;
         flex-direction:column;
         align-items:center;
         gap:10px;
         margin-bottom:16px;
-    `;
+        `;
 
-    const preview =
+    profileAvatarPreview =
         document.createElement(
             "div"
         );
 
-    preview.className =
+    profileAvatarPreview.className =
         "profile-avatar-preview";
 
-    preview.style.cssText = `
+    profileAvatarPreview.style.cssText =
+        `
         width:76px;
         height:76px;
         border-radius:50%;
@@ -938,11 +703,8 @@ function ensureProfileAvatarPicker() {
         color:#ff78c8;
         font-size:24px;
         font-weight:700;
-        font-family:ui-monospace, monospace;
-    `;
-
-    profileAvatarPreview =
-        preview;
+        font-family:ui-monospace,monospace;
+        `;
 
     const label =
         document.createElement(
@@ -952,121 +714,107 @@ function ensureProfileAvatarPicker() {
     label.textContent =
         "Choose profile picture";
 
-    label.style.cssText = `
+    label.style.cssText =
+        `
         cursor:pointer;
         color:#ff78c8;
         font-size:12px;
-        font-family:ui-monospace, monospace;
-    `;
+        font-family:ui-monospace,monospace;
+        `;
 
-    const input =
+    profileAvatarInput =
         document.createElement(
             "input"
         );
 
-    input.type =
+    profileAvatarInput.type =
         "file";
 
-    input.accept =
+    profileAvatarInput.accept =
         "image/png,image/jpeg,image/webp,image/gif";
 
-    input.id =
+    profileAvatarInput.id =
         "profile-avatar";
 
-    input.style.display =
+    profileAvatarInput.style.display =
         "none";
 
-    profileAvatarInput =
-        input;
-
-    label.appendChild(
-        input
+    profileAvatarInput.addEventListener(
+        "change",
+        handleAvatarSelection
     );
 
-    const removeButton =
+    label.appendChild(
+        profileAvatarInput
+    );
+
+    profileAvatarRemoveButton =
         document.createElement(
             "button"
         );
 
-    removeButton.type =
+    profileAvatarRemoveButton.type =
         "button";
 
-    removeButton.textContent =
+    profileAvatarRemoveButton.textContent =
         "Remove picture";
 
-    removeButton.style.cssText = `
+    profileAvatarRemoveButton.style.cssText =
+        `
         display:none;
         border:0;
         background:none;
         color:#aa9caf;
         cursor:pointer;
         font-size:11px;
-    `;
+        `;
 
-    profileAvatarRemoveButton =
-        removeButton;
-
-    input.addEventListener(
-        "change",
-        handleAvatarSelection
-    );
-
-    removeButton.addEventListener(
+    profileAvatarRemoveButton.addEventListener(
         "click",
-        () => {
-
-            selectedAvatarFile =
-                null;
-
-            profileAvatarInput.value =
-                "";
-
-            profileAvatarPreview.innerHTML =
-                "";
-
-            profileAvatarPreview.textContent =
-                getInitial(
-                    profileDisplayName?.value ||
-                    currentProfile?.display_name
-                );
-
-            profileAvatarRemoveButton.style.display =
-                currentProfile?.avatar_url
-                    ? "block"
-                    : "none";
-        }
+        removeSelectedAvatar
     );
 
-    wrapper.appendChild(
-        preview
+    wrapper.append(
+        profileAvatarPreview,
+        label,
+        profileAvatarRemoveButton
     );
 
-    wrapper.appendChild(
-        label
+    profileForm.insertBefore(
+        wrapper,
+        profileUsername ||
+        profileForm.firstChild
     );
-
-    wrapper.appendChild(
-        removeButton
-    );
-
-    const firstInput =
-        profileUsername;
-
-    if (firstInput) {
-
-        profileForm.insertBefore(
-            wrapper,
-            firstInput
-        );
-
-    } else {
-
-        profileForm.prepend(
-            wrapper
-        );
-    }
 }
 
+function removeSelectedAvatar() {
+
+    selectedAvatarFile = null;
+
+    if (profileAvatarInput) {
+        profileAvatarInput.value = "";
+    }
+
+    if (profileAvatarPreview) {
+
+        profileAvatarPreview.innerHTML =
+            "";
+
+        profileAvatarPreview.textContent =
+            getInitial(
+                profileDisplayName?.value ||
+                currentProfile?.display_name
+            );
+    }
+
+    if (profileAvatarRemoveButton) {
+
+        profileAvatarRemoveButton.style.display =
+            currentProfile?.avatar_url
+                ? "block"
+                : "none";
+    }
+}
 
 function handleAvatarSelection(
     event
@@ -1079,15 +827,18 @@ function handleAvatarSelection(
         return;
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (
+        !file.type.startsWith(
+            "image/"
+        )
+    ) {
 
         showError(
             profileError,
             "Please choose an image file."
         );
 
-        event.target.value =
-            "";
+        event.target.value = "";
 
         return;
     }
@@ -1102,8 +853,7 @@ function handleAvatarSelection(
             "Profile pictures must be smaller than 5 MB."
         );
 
-        event.target.value =
-            "";
+        event.target.value = "";
 
         return;
     }
@@ -1121,13 +871,12 @@ function handleAvatarSelection(
     reader.onload =
         () => {
 
-            if (
-                !profileAvatarPreview
-            ) {
+            if (!profileAvatarPreview) {
                 return;
             }
 
-            profileAvatarPreview.innerHTML = `
+            profileAvatarPreview.innerHTML =
+                `
                 <img
                     src="${reader.result}"
                     alt=""
@@ -1137,7 +886,7 @@ function handleAvatarSelection(
                         object-fit:cover;
                     "
                 >
-            `;
+                `;
 
             if (
                 profileAvatarRemoveButton
@@ -1153,51 +902,53 @@ function handleAvatarSelection(
     );
 }
 
-
-function updateProfileAvatarPreview(
+async function updateProfileAvatarPreview(
     profile
 ) {
 
     ensureProfileAvatarPicker();
 
     if (
-        !profileAvatarPreview
-    ) {
-        return;
-    }
-
-    if (
+        !profileAvatarPreview ||
         selectedAvatarFile
     ) {
         return;
     }
 
-    const avatarUrl =
-        profile?.avatar_url;
+    if (
+        profile?.avatar_url
+    ) {
 
-    if (avatarUrl) {
+        const url =
+            await resolveAvatarUrl(
+                profile.avatar_url
+            );
 
-        profileAvatarPreview.innerHTML = `
-            <img
-                src="${escapeHtml(avatarUrl)}"
-                alt=""
-                style="
-                    width:100%;
-                    height:100%;
-                    object-fit:cover;
-                "
-            >
-        `;
+        if (url) {
 
-        if (
-            profileAvatarRemoveButton
-        ) {
+            profileAvatarPreview.innerHTML =
+                `
+                <img
+                    src="${escapeHtml(url)}"
+                    alt=""
+                    style="
+                        width:100%;
+                        height:100%;
+                        object-fit:cover;
+                    "
+                >
+                `;
 
-            profileAvatarRemoveButton.style.display =
-                "block";
+            if (
+                profileAvatarRemoveButton
+            ) {
+
+                profileAvatarRemoveButton.style.display =
+                    "block";
+            }
+
+            return;
         }
-
-        return;
     }
 
     const metadata =
@@ -1211,7 +962,8 @@ function updateProfileAvatarPreview(
 
     if (googleAvatar) {
 
-        profileAvatarPreview.innerHTML = `
+        profileAvatarPreview.innerHTML =
+            `
             <img
                 src="${escapeHtml(googleAvatar)}"
                 alt=""
@@ -1221,7 +973,15 @@ function updateProfileAvatarPreview(
                     object-fit:cover;
                 "
             >
-        `;
+            `;
+
+        if (
+            profileAvatarRemoveButton
+        ) {
+
+            profileAvatarRemoveButton.style.display =
+                "block";
+        }
 
         return;
     }
@@ -1241,7 +1001,6 @@ function updateProfileAvatarPreview(
             "none";
     }
 }
-
 
 async function uploadAvatar(
     file
@@ -1265,7 +1024,8 @@ async function uploadAvatar(
             .replace(
                 /[^a-z0-9]/g,
                 ""
-            );
+            ) ||
+        "jpg";
 
     const path =
         `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
@@ -1302,21 +1062,64 @@ async function uploadAvatar(
         return null;
     }
 
-    const {
-        data
-    } =
-        client.storage
-            .from(
-                AVATAR_BUCKET
-            )
-            .getPublicUrl(
-                path
-            );
-
-    return data?.publicUrl ||
-        null;
+    // Store the storage path instead of a temporary/browser URL.
+    return path;
 }
 
+function avatarStoragePath(
+    value
+) {
+
+    if (!value) {
+        return null;
+    }
+
+    // New profiles store the path directly.
+    if (
+        !value.startsWith("http")
+    ) {
+
+        return value.replace(
+            /^\/+/,
+            ""
+        );
+    }
+
+    try {
+
+        const url =
+            new URL(value);
+
+        const markers = [
+            `/storage/v1/object/public/${AVATAR_BUCKET}/`,
+            `/storage/v1/object/authenticated/${AVATAR_BUCKET}/`,
+            `/storage/v1/object/sign/${AVATAR_BUCKET}/`
+        ];
+
+        for (
+            const marker of markers
+        ) {
+
+            const index =
+                url.pathname.indexOf(
+                    marker
+                );
+
+            if (index !== -1) {
+
+                return decodeURIComponent(
+                    url.pathname.substring(
+                        index +
+                        marker.length
+                    )
+                );
+            }
+        }
+
+    } catch {}
+
+    return null;
+}
 
 async function deleteAvatar(
     avatarUrl
@@ -1329,34 +1132,23 @@ async function deleteAvatar(
         return;
     }
 
-    try {
+    const path =
+        avatarStoragePath(
+            avatarUrl
+        );
 
-        const marker =
-            `/storage/v1/object/public/${AVATAR_BUCKET}/`;
-
-        const index =
-            avatarUrl.indexOf(
-                marker
-            );
-
-        if (index === -1) {
-            return;
-        }
-
-        const path =
-            decodeURIComponent(
-                avatarUrl.substring(
-                    index +
-                    marker.length
-                )
-            );
-
-        if (!path.startsWith(
+    if (
+        !path ||
+        !path.startsWith(
             `${currentUser.id}/`
-        )) {
-            return;
-        }
+        )
+    ) {
+        return;
+    }
 
+    const {
+        error
+    } =
         await client.storage
             .from(
                 AVATAR_BUCKET
@@ -1365,7 +1157,7 @@ async function deleteAvatar(
                 path
             ]);
 
-    } catch (error) {
+    if (error) {
 
         console.warn(
             "AVATAR DELETE FAILED:",
@@ -1374,6 +1166,119 @@ async function deleteAvatar(
     }
 }
 
+async function resolveAvatarUrl(
+    avatarValue
+) {
+
+    if (!avatarValue) {
+        return null;
+    }
+
+    const path =
+        avatarStoragePath(
+            avatarValue
+        );
+
+    // Google/external avatar.
+    if (!path) {
+        return avatarValue;
+    }
+
+    const cacheKey =
+        `${AVATAR_BUCKET}/${path}`;
+
+    if (
+        avatarObjectUrls.has(
+            cacheKey
+        )
+    ) {
+
+        return avatarObjectUrls.get(
+            cacheKey
+        );
+    }
+
+    // Signed URLs work with private buckets too.
+    const {
+        data: signed,
+        error: signedError
+    } =
+        await client.storage
+            .from(
+                AVATAR_BUCKET
+            )
+            .createSignedUrl(
+                path,
+                3600
+            );
+
+    if (
+        !signedError &&
+        signed?.signedUrl
+    ) {
+
+        avatarObjectUrls.set(
+            cacheKey,
+            signed.signedUrl
+        );
+
+        return signed.signedUrl;
+    }
+
+    // Fallback for buckets where download is allowed.
+    const {
+        data: blob,
+        error: downloadError
+    } =
+        await client.storage
+            .from(
+                AVATAR_BUCKET
+            )
+            .download(
+                path
+            );
+
+    if (
+        !downloadError &&
+        blob
+    ) {
+
+        const objectUrl =
+            URL.createObjectURL(
+                blob
+            );
+
+        avatarObjectUrls.set(
+            cacheKey,
+            objectUrl
+        );
+
+        return objectUrl;
+    }
+
+    // Final fallback for public buckets.
+    const {
+        data: publicData
+    } =
+        client.storage
+            .from(
+                AVATAR_BUCKET
+            )
+            .getPublicUrl(
+                path
+            );
+
+    return (
+        publicData?.publicUrl ||
+        (
+            avatarValue.startsWith(
+                "http"
+            )
+                ? avatarValue
+                : null
+        )
+    );
+}
 
 function prepareProfileForm(
     profile
@@ -1381,20 +1286,17 @@ function prepareProfileForm(
 
     ensureProfileAvatarPicker();
 
-    selectedAvatarFile =
-        null;
+    selectedAvatarFile = null;
 
-    if (
-        profileAvatarInput
-    ) {
-        profileAvatarInput.value =
-            "";
+    if (profileAvatarInput) {
+        profileAvatarInput.value = "";
     }
 
     if (profile) {
 
         profileUsername.value =
-            profile.username || "";
+            profile.username ||
+            "";
 
         profileDisplayName.value =
             profile.display_name ===
@@ -1428,15 +1330,13 @@ function prepareProfileForm(
     );
 }
 
-
 function openProfileEditor() {
 
     if (!currentUser) {
         return;
     }
 
-    editingProfile =
-        true;
+    editingProfile = true;
 
     clearError(
         profileError
@@ -1448,23 +1348,17 @@ function openProfileEditor() {
 
     showProfileScreen();
 
-    if (profileUsername) {
-        profileUsername.focus();
-    }
+    profileUsername?.focus();
 }
 
-
-if (profileCustomizeButton) {
-
-    profileCustomizeButton.addEventListener(
-        "click",
-        openProfileEditor
-    );
-}
+profileCustomizeButton?.addEventListener(
+    "click",
+    openProfileEditor
+);
 
 
 // ------------------------------------------------------------
-// Initialize user
+// User initialization
 // ------------------------------------------------------------
 
 async function initializeUser() {
@@ -1476,45 +1370,22 @@ async function initializeUser() {
         return;
     }
 
-    initializingUser =
-        true;
+    initializingUser = true;
 
     try {
 
         currentProfile =
             await loadProfile();
 
-        if (!currentProfile) {
-
-            editingProfile =
-                false;
-
-            prepareProfileForm(
-                null
-            );
-
-            showProfileScreen();
-
-            clearError(
-                profileError
-            );
-
-            if (profileUsername) {
-                profileUsername.focus();
-            }
-
-            return;
-        }
-
         if (
+            !currentProfile ||
             !currentProfile.username ||
             !currentProfile.display_name ||
             currentProfile.display_name ===
                 "New User"
         ) {
 
-            editingProfile =
-                false;
+            editingProfile = false;
 
             prepareProfileForm(
                 currentProfile
@@ -1526,9 +1397,7 @@ async function initializeUser() {
                 profileError
             );
 
-            if (profileUsername) {
-                profileUsername.focus();
-            }
+            profileUsername?.focus();
 
             return;
         }
@@ -1537,8 +1406,7 @@ async function initializeUser() {
 
     } finally {
 
-        initializingUser =
-            false;
+        initializingUser = false;
     }
 }
 
@@ -1551,7 +1419,7 @@ if (profileForm) {
 
     profileForm.addEventListener(
         "submit",
-        async (event) => {
+        async event => {
 
             event.preventDefault();
 
@@ -1609,11 +1477,8 @@ if (profileForm) {
 
             if (button) {
 
-                button.disabled =
-                    true;
-
-                button.textContent =
-                    "Checking...";
+                button.disabled = true;
+                button.textContent = "Checking...";
             }
 
             const {
@@ -1631,18 +1496,10 @@ if (profileForm) {
 
             if (usernameCheckError) {
 
-                console.error(
-                    "USERNAME CHECK ERROR:",
-                    usernameCheckError
-                );
-
                 if (button) {
 
-                    button.disabled =
-                        false;
-
-                    button.textContent =
-                        "Continue";
+                    button.disabled = false;
+                    button.textContent = "Continue";
                 }
 
                 showError(
@@ -1661,11 +1518,8 @@ if (profileForm) {
 
                 if (button) {
 
-                    button.disabled =
-                        false;
-
-                    button.textContent =
-                        "Continue";
+                    button.disabled = false;
+                    button.textContent = "Continue";
                 }
 
                 showError(
@@ -1690,55 +1544,44 @@ if (profileForm) {
                         "Uploading picture...";
                 }
 
-                const uploadedUrl =
+                const uploadedPath =
                     await uploadAvatar(
                         selectedAvatarFile
                     );
 
-                if (!uploadedUrl) {
+                if (!uploadedPath) {
 
                     if (button) {
 
-                        button.disabled =
-                            false;
-
-                        button.textContent =
-                            "Continue";
+                        button.disabled = false;
+                        button.textContent = "Continue";
                     }
 
                     showError(
                         profileError,
-                        "Failed to upload profile picture. Make sure the avatars bucket exists."
+                        "Failed to upload profile picture. Make sure the avatars bucket exists and allows uploads."
                     );
 
                     return;
                 }
 
-                const oldAvatarUrl =
+                const oldAvatar =
                     avatarUrl;
 
                 avatarUrl =
-                    uploadedUrl;
+                    uploadedPath;
 
-                if (
-                    oldAvatarUrl &&
-                    oldAvatarUrl !==
-                        avatarUrl
-                ) {
+                if (oldAvatar) {
 
                     await deleteAvatar(
-                        oldAvatarUrl
+                        oldAvatar
                     );
                 }
             }
 
             if (button) {
-                button.textContent =
-                    "Saving...";
+                button.textContent = "Saving...";
             }
-
-            let data;
-            let error;
 
             const profileData = {
 
@@ -1750,6 +1593,9 @@ if (profileForm) {
                 avatar_url:
                     avatarUrl
             };
+
+            let data;
+            let error;
 
             if (currentProfile) {
 
@@ -1778,7 +1624,6 @@ if (profileForm) {
                     await client
                         .from("profiles")
                         .insert({
-
                             id:
                                 currentUser.id,
 
@@ -1803,11 +1648,8 @@ if (profileForm) {
 
                 if (button) {
 
-                    button.disabled =
-                        false;
-
-                    button.textContent =
-                        "Continue";
+                    button.disabled = false;
+                    button.textContent = "Continue";
                 }
 
                 if (
@@ -1815,50 +1657,13 @@ if (profileForm) {
                     "23505"
                 ) {
 
-                    const constraint =
-                        (
-                            error.constraint ||
-                            ""
-                        ).toLowerCase();
-
-                    if (
-                        constraint.includes(
-                            "username"
-                        ) ||
-                        (
-                            error.message ||
-                            ""
-                        )
-                            .toLowerCase()
-                            .includes(
-                                "username"
-                            )
-                    ) {
-
-                        showError(
-                            profileError,
-                            "That username was just taken. Please choose another one."
-                        );
-
-                        profileUsername.focus();
-                        profileUsername.select();
-
-                        return;
-                    }
-
-                    if (currentProfile) {
-
-                        showError(
-                            profileError,
-                            "Could not save those profile changes."
-                        );
-
-                        return;
-                    }
-
                     showError(
                         profileError,
-                        "Your profile already exists. Please try again."
+                        error.message
+                            ?.toLowerCase()
+                            .includes("username")
+                            ? "That username was just taken. Please choose another one."
+                            : "Your profile already exists. Please try again."
                     );
 
                     return;
@@ -1876,19 +1681,13 @@ if (profileForm) {
             currentProfile =
                 data;
 
-            editingProfile =
-                false;
-
-            selectedAvatarFile =
-                null;
+            editingProfile = false;
+            selectedAvatarFile = null;
 
             if (button) {
 
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    "Continue";
+                button.disabled = false;
+                button.textContent = "Continue";
             }
 
             await startChat();
@@ -1910,11 +1709,12 @@ async function loadUsers() {
         return;
     }
 
-    userList.innerHTML = `
+    userList.innerHTML =
+        `
         <div class="sidebar-empty">
             Loading users...
         </div>
-    `;
+        `;
 
     const {
         data,
@@ -1943,11 +1743,12 @@ async function loadUsers() {
             error
         );
 
-        userList.innerHTML = `
+        userList.innerHTML =
+            `
             <div class="sidebar-empty">
                 Failed to load users.
             </div>
-        `;
+            `;
 
         return;
     }
@@ -1960,68 +1761,162 @@ async function loadUsers() {
     );
 }
 
+function getInitial(name) {
+
+    if (!name) {
+        return "?";
+    }
+
+    return name
+        .trim()
+        .charAt(0)
+        .toUpperCase();
+}
+
+function escapeHtml(value) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.textContent =
+        value ?? "";
+
+    return div.innerHTML;
+}
 
 function getAvatarMarkup(
     user,
     className = "user-avatar"
 ) {
 
-    if (
-        user &&
-        user.avatar_url
-    ) {
+    const initial =
+        escapeHtml(
+            getInitial(
+                user?.display_name
+            )
+        );
+
+    if (!user?.avatar_url) {
 
         return `
             <div class="${className}">
-                <img
-                    src="${escapeHtml(user.avatar_url)}"
-                    alt=""
-                    loading="lazy"
-                    style="
-                        width:100%;
-                        height:100%;
-                        object-fit:cover;
-                        border-radius:50%;
-                        display:block;
-                    "
-                >
+                ${initial}
             </div>
         `;
     }
 
     return `
-        <div class="${className}">
-            ${escapeHtml(
-                getInitial(
-                    user?.display_name
-                )
-            )}
+        <div class="${className} avatar-wrap">
+
+            <img
+                data-avatar-url="${escapeHtml(
+                    user.avatar_url
+                )}"
+                alt=""
+                loading="lazy"
+            >
+
+            <span>
+                ${initial}
+            </span>
+
         </div>
     `;
 }
 
+function hydrateAvatarImages(root) {
 
-function renderUsers(
-    users
-) {
+    if (!root) {
+        return;
+    }
+
+    root
+        .querySelectorAll(
+            "img[data-avatar-url]"
+        )
+        .forEach(
+            img => {
+
+                resolveAvatarUrl(
+                    img.dataset.avatarUrl
+                )
+                    .then(
+                        url => {
+
+                            if (!url) {
+                                return;
+                            }
+
+                            img.src = url;
+
+                            img.onload =
+                                () => {
+
+                                    img.style.display =
+                                        "block";
+
+                                    if (
+                                        img.nextElementSibling
+                                    ) {
+
+                                        img.nextElementSibling.style.display =
+                                            "none";
+                                    }
+                                };
+
+                            img.onerror =
+                                () => {
+
+                                    img.style.display =
+                                        "none";
+
+                                    if (
+                                        img.nextElementSibling
+                                    ) {
+
+                                        img.nextElementSibling.style.display =
+                                            "flex";
+                                    }
+                                };
+                        }
+                    )
+                    .catch(
+                        () => {
+
+                            img.style.display =
+                                "none";
+
+                            if (
+                                img.nextElementSibling
+                            ) {
+
+                                img.nextElementSibling.style.display =
+                                    "flex";
+                            }
+                        }
+                    );
+            }
+        );
+}
+
+function renderUsers(users) {
 
     if (!userList) {
         return;
     }
 
-    userList.innerHTML =
-        "";
+    userList.innerHTML = "";
 
-    if (
-        !users ||
-        users.length === 0
-    ) {
+    if (!users?.length) {
 
-        userList.innerHTML = `
+        userList.innerHTML =
+            `
             <div class="sidebar-empty">
                 No users found.
             </div>
-        `;
+            `;
 
         return;
     }
@@ -2044,8 +1939,8 @@ function renderUsers(
         element.dataset.userId =
             user.id;
 
-        element.innerHTML = `
-
+        element.innerHTML =
+            `
             ${getAvatarMarkup(user)}
 
             <div class="user-info">
@@ -2063,7 +1958,7 @@ function renderUsers(
                 </div>
 
             </div>
-        `;
+            `;
 
         element.addEventListener(
             "click",
@@ -2080,101 +1975,62 @@ function renderUsers(
         userList.appendChild(
             element
         );
+
+        hydrateAvatarImages(
+            element
+        );
     }
 }
 
+userSearch?.addEventListener(
+    "input",
+    () => {
 
-if (userSearch) {
+        const query =
+            userSearch.value
+                .trim()
+                .toLowerCase();
 
-    userSearch.addEventListener(
-        "input",
-        () => {
-
-            const query =
-                userSearch.value
-                    .trim()
-                    .toLowerCase();
-
-            if (!query) {
-
-                renderUsers(
-                    allUsers
-                );
-
-                return;
-            }
-
-            const filtered =
-                allUsers.filter(
-                    user => {
-
-                        const username =
-                            user.username
-                                ?.toLowerCase() ||
-                            "";
-
-                        const displayName =
-                            user.display_name
-                                ?.toLowerCase() ||
-                            "";
-
-                        return (
-                            username.includes(
-                                query
-                            ) ||
-                            displayName.includes(
-                                query
-                            )
-                        );
-                    }
-                );
+        if (!query) {
 
             renderUsers(
-                filtered
+                allUsers
             );
+
+            return;
         }
-    );
-}
 
+        renderUsers(
+            allUsers.filter(
+                user =>
+                    (
+                        user.username ||
+                        ""
+                    )
+                        .toLowerCase()
+                        .includes(
+                            query
+                        ) ||
 
-function getInitial(
-    name
-) {
-
-    if (!name) {
-        return "?";
-    }
-
-    return name
-        .trim()
-        .charAt(0)
-        .toUpperCase();
-}
-
-
-function escapeHtml(
-    value
-) {
-
-    const div =
-        document.createElement(
-            "div"
+                    (
+                        user.display_name ||
+                        ""
+                    )
+                        .toLowerCase()
+                        .includes(
+                            query
+                        )
+            )
         );
-
-    div.textContent =
-        value ?? "";
-
-    return div.innerHTML;
-}
+    }
+);
 
 
 // ------------------------------------------------------------
 // Conversations
 // ------------------------------------------------------------
 
-async function openConversation(
-    user
-) {
+async function openConversation(user) {
 
     if (
         !user ||
@@ -2190,8 +2046,8 @@ async function openConversation(
 
     if (conversationUser) {
 
-        conversationUser.innerHTML = `
-
+        conversationUser.innerHTML =
+            `
             ${getAvatarMarkup(
                 user,
                 "conversation-avatar"
@@ -2212,7 +2068,11 @@ async function openConversation(
                 </div>
 
             </div>
-        `;
+            `;
+
+        hydrateAvatarImages(
+            conversationUser
+        );
     }
 
     const {
@@ -2239,11 +2099,15 @@ async function openConversation(
                 "Conversation error";
         }
 
-        messages.innerHTML = `
-            <div class="empty">
-                Failed to open conversation.
-            </div>
-        `;
+        if (messages) {
+
+            messages.innerHTML =
+                `
+                <div class="empty">
+                    Failed to open conversation.
+                </div>
+                `;
+        }
 
         return;
     }
@@ -2271,17 +2135,13 @@ async function openConversation(
         messageInput.focus();
     }
 
-    if (messageForm) {
+    const button =
+        messageForm?.querySelector(
+            "button"
+        );
 
-        const button =
-            messageForm.querySelector(
-                "button"
-            );
-
-        if (button) {
-            button.disabled =
-                false;
-        }
+    if (button) {
+        button.disabled = false;
     }
 
     if (status) {
@@ -2290,20 +2150,23 @@ async function openConversation(
     }
 }
 
-
 async function loadConversationMessages() {
 
-    if (!currentConversationId) {
+    if (
+        !currentConversationId ||
+        !messages
+    ) {
         return;
     }
 
     displayedMessageIds.clear();
 
-    messages.innerHTML = `
+    messages.innerHTML =
+        `
         <div class="empty">
             Loading messages...
         </div>
-    `;
+        `;
 
     const {
         data,
@@ -2311,18 +2174,20 @@ async function loadConversationMessages() {
     } =
         await client
             .from("messages")
-            .select(`
+            .select(
+                `
                 id,
                 user_id,
                 conversation_id,
                 content,
                 created_at,
-                profile:profiles (
+                profile:profiles(
                     username,
                     display_name,
                     avatar_url
                 )
-            `)
+                `
+            )
             .eq(
                 "conversation_id",
                 currentConversationId
@@ -2341,46 +2206,40 @@ async function loadConversationMessages() {
             error
         );
 
-        messages.innerHTML = `
+        messages.innerHTML =
+            `
             <div class="empty">
                 Failed to load messages.
             </div>
-        `;
+            `;
 
         return;
     }
 
-    messages.innerHTML =
-        "";
+    messages.innerHTML = "";
 
-    if (
-        !data ||
-        data.length === 0
-    ) {
+    if (!data?.length) {
 
-        messages.innerHTML = `
+        messages.innerHTML =
+            `
             <div class="empty">
                 No messages yet. Say hello!
             </div>
-        `;
+            `;
 
         return;
     }
 
-    for (
-        const message of data
-    ) {
-
-        addMessage(
-            message
-        );
-    }
+    data.forEach(
+        addMessage
+    );
 }
 
+function addMessage(message) {
 
-function addMessage(
-    message
-) {
+    if (!messages) {
+        return;
+    }
 
     if (
         message.id &&
@@ -2398,14 +2257,11 @@ function addMessage(
         );
     }
 
-    const empty =
-        messages.querySelector(
+    messages
+        .querySelector(
             ".empty"
-        );
-
-    if (empty) {
-        empty.remove();
-    }
+        )
+        ?.remove();
 
     const element =
         document.createElement(
@@ -2426,38 +2282,40 @@ function addMessage(
         );
     }
 
-    const username =
-        document.createElement(
-            "div"
-        );
+    const profile =
+        message.profile ||
+        {};
 
-    username.className =
-        "username";
+    element.innerHTML =
+        `
+        <div class="message-author">
 
-    username.textContent =
-        message.profile?.display_name ||
-        "User";
+            ${getAvatarMarkup(
+                profile,
+                "message-avatar"
+            )}
 
-    const content =
-        document.createElement(
-            "div"
-        );
+            <div class="username">
+                ${escapeHtml(
+                    profile.display_name ||
+                    "User"
+                )}
+            </div>
 
-    content.className =
-        "content";
+        </div>
 
-    content.textContent =
-        message.content;
-
-    element.appendChild(
-        username
-    );
-
-    element.appendChild(
-        content
-    );
+        <div class="content">
+            ${escapeHtml(
+                message.content
+            )}
+        </div>
+        `;
 
     messages.appendChild(
+        element
+    );
+
+    hydrateAvatarImages(
         element
     );
 
@@ -2467,7 +2325,7 @@ function addMessage(
 
 
 // ------------------------------------------------------------
-// Sending messages
+// Messages
 // ------------------------------------------------------------
 
 async function sendMessage(
@@ -2487,7 +2345,6 @@ async function sendMessage(
         await client
             .from("messages")
             .insert({
-
                 user_id:
                     currentUser.id,
 
@@ -2515,56 +2372,50 @@ async function sendMessage(
     return true;
 }
 
+messageForm?.addEventListener(
+    "submit",
+    async event => {
 
-if (messageForm) {
+        event.preventDefault();
 
-    messageForm.addEventListener(
-        "submit",
-        async (event) => {
+        const content =
+            messageInput.value
+                .trim();
 
-            event.preventDefault();
-
-            const content =
-                messageInput.value
-                    .trim();
-
-            if (
-                !content ||
-                !currentConversationId
-            ) {
-                return;
-            }
-
-            const button =
-                messageForm.querySelector(
-                    "button"
-                );
-
-            if (button) {
-                button.disabled =
-                    true;
-            }
-
-            const success =
-                await sendMessage(
-                    content
-                );
-
-            if (success) {
-
-                messageInput.value =
-                    "";
-
-                messageInput.focus();
-            }
-
-            if (button) {
-                button.disabled =
-                    false;
-            }
+        if (
+            !content ||
+            !currentConversationId
+        ) {
+            return;
         }
-    );
-}
+
+        const button =
+            messageForm.querySelector(
+                "button"
+            );
+
+        if (button) {
+            button.disabled = true;
+        }
+
+        const success =
+            await sendMessage(
+                content
+            );
+
+        if (success) {
+
+            messageInput.value =
+                "";
+
+            messageInput.focus();
+        }
+
+        if (button) {
+            button.disabled = false;
+        }
+    }
+);
 
 
 // ------------------------------------------------------------
@@ -2579,13 +2430,10 @@ async function startConversationRealtime() {
         return;
     }
 
-    const channelName =
-        `conversation:${currentConversationId}`;
-
     realtimeChannel =
         client
             .channel(
-                channelName
+                `conversation:${currentConversationId}`
             )
             .on(
                 "postgres_changes",
@@ -2602,9 +2450,7 @@ async function startConversationRealtime() {
                     filter:
                         `conversation_id=eq.${currentConversationId}`
                 },
-                async (
-                    payload
-                ) => {
+                async payload => {
 
                     if (
                         payload.new
@@ -2618,11 +2464,9 @@ async function startConversationRealtime() {
                         data: profile
                     } =
                         await client
-                            .from(
-                                "profiles"
-                            )
+                            .from("profiles")
                             .select(
-                                "username, display_name, avatar_url"
+                                "username,display_name,avatar_url"
                             )
                             .eq(
                                 "id",
@@ -2631,44 +2475,26 @@ async function startConversationRealtime() {
                             .single();
 
                     addMessage({
-
                         ...payload.new,
-
                         profile
                     });
                 }
             )
             .subscribe(
-                (
-                    subscriptionStatus
-                ) => {
-
-                    console.log(
-                        "REALTIME:",
-                        subscriptionStatus
-                    );
+                subscriptionStatus => {
 
                     if (!status) {
                         return;
                     }
 
-                    if (
+                    status.textContent =
                         subscriptionStatus ===
-                        "SUBSCRIBED"
-                    ) {
-
-                        status.textContent =
-                            "Connected";
-
-                    } else {
-
-                        status.textContent =
-                            subscriptionStatus;
-                    }
+                            "SUBSCRIBED"
+                            ? "Connected"
+                            : subscriptionStatus;
                 }
             );
 }
-
 
 async function stopRealtime() {
 
@@ -2680,8 +2506,7 @@ async function stopRealtime() {
         realtimeChannel
     );
 
-    realtimeChannel =
-        null;
+    realtimeChannel = null;
 }
 
 
@@ -2710,33 +2535,29 @@ async function startChat() {
 
     if (messages) {
 
-        messages.innerHTML = `
+        messages.innerHTML =
+            `
             <div class="empty">
                 Select a user to start a conversation.
             </div>
-        `;
+            `;
     }
 
     if (messageInput) {
 
-        messageInput.disabled =
-            true;
+        messageInput.disabled = true;
 
         messageInput.placeholder =
             "Select a conversation...";
     }
 
-    if (messageForm) {
+    const button =
+        messageForm?.querySelector(
+            "button"
+        );
 
-        const button =
-            messageForm.querySelector(
-                "button"
-            );
-
-        if (button) {
-            button.disabled =
-                true;
-        }
+    if (button) {
+        button.disabled = true;
     }
 
     await stopRealtime();
@@ -2752,64 +2573,61 @@ async function startChat() {
 // Logout
 // ------------------------------------------------------------
 
-if (logoutButton) {
+logoutButton?.addEventListener(
+    "click",
+    async () => {
 
-    logoutButton.addEventListener(
-        "click",
-        async () => {
+        await stopRealtime();
 
-            await stopRealtime();
+        closeGooglePopup();
 
-            closeGooglePopup();
+        const {
+            error
+        } =
+            await client.auth.signOut();
 
-            const {
+        if (error) {
+
+            console.error(
+                "LOGOUT ERROR:",
                 error
-            } =
-                await client.auth.signOut();
+            );
 
-            if (error) {
-
-                console.error(
-                    "LOGOUT ERROR:",
-                    error
-                );
-
-                return;
-            }
-
-            currentUser =
-                null;
-
-            currentProfile =
-                null;
-
-            currentConversationId =
-                null;
-
-            currentConversationUser =
-                null;
-
-            allUsers =
-                [];
-
-            displayedMessageIds.clear();
-
-            selectedAvatarFile =
-                null;
-
-            if (messages) {
-
-                messages.innerHTML = `
-                    <div class="empty">
-                        Select a user to start a conversation.
-                    </div>
-                `;
-            }
-
-            showLoginScreen();
+            return;
         }
-    );
-}
+
+        currentUser = null;
+        currentProfile = null;
+        currentConversationId = null;
+        currentConversationUser = null;
+        allUsers = [];
+
+        displayedMessageIds.clear();
+
+        selectedAvatarFile = null;
+
+        for (
+            const url of
+            avatarObjectUrls.values()
+        ) {
+
+            if (
+                url.startsWith(
+                    "blob:"
+                )
+            ) {
+
+                URL.revokeObjectURL(
+                    url
+                );
+            }
+        }
+
+        avatarObjectUrls.clear();
+
+        showLoginScreen();
+    }
+);
 
 
 // ------------------------------------------------------------
@@ -2836,10 +2654,7 @@ async function checkSession() {
         return;
     }
 
-    if (
-        data &&
-        data.session
-    ) {
+    if (data?.session) {
 
         currentUser =
             data.session.user;
@@ -2851,7 +2666,6 @@ async function checkSession() {
         showLoginScreen();
     }
 }
-
 
 client.auth.onAuthStateChange(
     (
@@ -2884,17 +2698,10 @@ client.auth.onAuthStateChange(
 
         if (!session) {
 
-            currentUser =
-                null;
-
-            currentProfile =
-                null;
-
-            currentConversationId =
-                null;
-
-            currentConversationUser =
-                null;
+            currentUser = null;
+            currentProfile = null;
+            currentConversationId = null;
+            currentConversationUser = null;
 
             closeGooglePopup();
 

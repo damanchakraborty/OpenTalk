@@ -21,6 +21,8 @@
 
 <body>
 
+<!-- Login -->
+
 <section
     id="auth-screen"
     class="auth-screen"
@@ -59,6 +61,9 @@
 
 </section>
 
+
+<!-- First-time profile setup -->
+
 <section
     id="profile-screen"
     class="auth-screen hidden"
@@ -69,7 +74,7 @@
         <h1>Welcome!</h1>
 
         <p class="auth-subtitle">
-            One last thing — set up your ChudChat profile.
+            One last thing — set up your OpenTalk profile.
         </p>
 
         <div
@@ -112,10 +117,15 @@
 
 </section>
 
+
+<!-- Main chat -->
+
 <main
     id="chat-screen"
     class="chat hidden"
 >
+
+    <!-- Top bar -->
 
     <header class="chat-header">
 
@@ -131,7 +141,24 @@
 
         <div class="user-controls">
 
-            <span id="current-user"></span>
+            <button
+                id="profile-button"
+                class="profile-button"
+                type="button"
+            >
+
+                <span
+                    id="profile-button-avatar"
+                    class="profile-button-avatar"
+                >
+                    ?
+                </span>
+
+                <span
+                    id="current-user"
+                ></span>
+
+            </button>
 
             <button
                 id="logout-button"
@@ -144,9 +171,12 @@
 
     </header>
 
+
     <div class="chat-body">
 
-        
+
+        <!-- User / conversation sidebar -->
+
         <aside
             id="user-sidebar"
             class="user-sidebar"
@@ -157,30 +187,38 @@
                 <h2>Users</h2>
 
             </div>
-    
-    <button
-        id="global-chat-button"
-        class="user-item global-chat-item"
-        type="button"
-    >
 
-        <div class="user-avatar global-chat-avatar">
-            #
-        </div>
 
-        <div class="user-info">
+            <!-- Global chat stays pinned -->
 
-            <div class="user-display-name">
-                Global Chat
-            </div>
+            <button
+                id="global-chat-button"
+                class="user-item global-chat-item"
+                type="button"
+            >
 
-            <div class="user-username">
-                Everyone
-            </div>
+                <div
+                    class="user-avatar global-chat-avatar"
+                >
+                    #
+                </div>
 
-        </div>
+                <div class="user-info">
 
-    </button>
+                    <div class="user-display-name">
+                        Global Chat
+                    </div>
+
+                    <div class="user-username">
+                        Everyone
+                    </div>
+
+                </div>
+
+            </button>
+
+
+            <!-- Search -->
 
             <div class="user-search">
 
@@ -192,6 +230,9 @@
                 >
 
             </div>
+
+
+            <!-- Users -->
 
             <div
                 id="user-list"
@@ -206,44 +247,54 @@
 
         </aside>
 
-<div
-    id="mobile-sidebar-backdrop"
-    class="mobile-sidebar-backdrop"
-></div>
 
-        
+        <!-- Mobile sidebar backdrop -->
+
+        <div
+            id="mobile-sidebar-backdrop"
+            class="mobile-sidebar-backdrop"
+        ></div>
+
+
+        <!-- Conversation -->
+
         <section class="conversation">
 
-<header
-    id="conversation-header"
-    class="conversation-header"
->
+            <header
+                id="conversation-header"
+                class="conversation-header"
+            >
 
-    
-    <button
-        id="mobile-chat-selector"
-        class="mobile-chat-selector"
-        type="button"
-        aria-label="Open conversations"
-        aria-expanded="false"
-    >
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
+                <button
+                    id="mobile-chat-selector"
+                    class="mobile-chat-selector"
+                    type="button"
+                    aria-label="Open conversations"
+                    aria-expanded="false"
+                >
 
-    <div
-        id="conversation-user"
-        class="conversation-user"
-    >
+                    <span></span>
+                    <span></span>
+                    <span></span>
 
-        <span class="conversation-placeholder">
-            Select a user to start chatting
-        </span>
+                </button>
 
-    </div>
 
-</header>
+                <div
+                    id="conversation-user"
+                    class="conversation-user"
+                >
+
+                    <span class="conversation-placeholder">
+                        Select a user to start chatting
+                    </span>
+
+                </div>
+
+            </header>
+
+
+            <!-- Messages -->
 
             <section
                 id="messages"
@@ -255,6 +306,9 @@
                 </div>
 
             </section>
+
+
+            <!-- Message input -->
 
             <form
                 id="message-form"
@@ -284,7 +338,140 @@
 
     </div>
 
+
+    <!-- Profile customization modal -->
+
+    <div
+        id="profile-modal"
+        class="profile-modal hidden"
+    >
+
+        <div
+            class="profile-modal-backdrop"
+            id="profile-modal-backdrop"
+        ></div>
+
+        <section
+            class="profile-modal-box"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-modal-title"
+        >
+
+            <div class="profile-modal-header">
+
+                <div>
+
+                    <h2 id="profile-modal-title">
+                        Customize Profile
+                    </h2>
+
+                    <p>
+                        Change how other people see you.
+                    </p>
+
+                </div>
+
+                <button
+                    id="profile-modal-close"
+                    class="profile-modal-close"
+                    type="button"
+                    aria-label="Close profile settings"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div
+                id="profile-custom-error"
+                class="auth-error"
+            ></div>
+
+
+            <form
+                id="profile-custom-form"
+                class="auth-form"
+            >
+
+                <div class="profile-preview">
+
+                    <div
+                        id="profile-preview-avatar"
+                        class="profile-preview-avatar"
+                    >
+                        ?
+                    </div>
+
+                    <div>
+
+                        <div
+                            id="profile-preview-name"
+                            class="profile-preview-name"
+                        >
+                            Display Name
+                        </div>
+
+                        <div
+                            id="profile-preview-username"
+                            class="profile-preview-username"
+                        >
+                            @username
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <label
+                    for="profile-custom-username"
+                >
+                    Username
+                </label>
+
+                <input
+                    id="profile-custom-username"
+                    type="text"
+                    minlength="3"
+                    maxlength="24"
+                    autocomplete="off"
+                    spellcheck="false"
+                    required
+                >
+
+
+                <label
+                    for="profile-custom-display-name"
+                >
+                    Display name
+                </label>
+
+                <input
+                    id="profile-custom-display-name"
+                    type="text"
+                    maxlength="40"
+                    autocomplete="off"
+                    required
+                >
+
+
+                <button
+                    id="profile-save-button"
+                    type="submit"
+                >
+                    Save Changes
+                </button>
+
+            </form>
+
+        </section>
+
+    </div>
+
 </main>
+
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 

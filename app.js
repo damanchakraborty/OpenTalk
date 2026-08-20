@@ -1,4 +1,3 @@
-
 const SUPABASE_URL =
     "https://vkelkgabycpxojybguvj.supabase.co";
 
@@ -29,6 +28,8 @@ let realtimeChannel = null;
 
 let allUsers = [];
 
+let recentUserIds = [];
+
 const displayedMessageIds =
     new Set();
 
@@ -41,6 +42,7 @@ const globalChatButton =
     document.getElementById(
         "global-chat-button"
     );
+
 // Screens
 
 const authScreen =
@@ -65,7 +67,7 @@ const googleLogin =
         "google-login"
     );
 
-// Profile
+// Initial profile setup
 
 const profileForm =
     document.getElementById(
@@ -80,6 +82,73 @@ const profileUsername =
 const profileDisplayName =
     document.getElementById(
         "profile-display-name"
+    );
+
+// Profile settings
+
+const profileButton =
+    document.getElementById(
+        "profile-button"
+    );
+
+const profileSettings =
+    document.getElementById(
+        "profile-settings"
+    );
+
+const closeProfileSettings =
+    document.getElementById(
+        "close-profile-settings"
+    );
+
+const cancelProfileSettings =
+    document.getElementById(
+        "cancel-profile-settings"
+    );
+
+const profileSettingsForm =
+    document.getElementById(
+        "profile-settings-form"
+    );
+
+const profileSettingsError =
+    document.getElementById(
+        "profile-settings-error"
+    );
+
+const settingsAvatarUrl =
+    document.getElementById(
+        "settings-avatar-url"
+    );
+
+const settingsDisplayName =
+    document.getElementById(
+        "settings-display-name"
+    );
+
+const settingsUsername =
+    document.getElementById(
+        "settings-username"
+    );
+
+const profilePreviewAvatar =
+    document.getElementById(
+        "profile-preview-avatar"
+    );
+
+const profilePreviewName =
+    document.getElementById(
+        "profile-preview-name"
+    );
+
+const profilePreviewUsername =
+    document.getElementById(
+        "profile-preview-username"
+    );
+
+const currentUserAvatar =
+    document.getElementById(
+        "current-user-avatar"
     );
 
 // Errors
@@ -157,7 +226,10 @@ const mobileSidebarBackdrop =
     document.getElementById(
         "mobile-sidebar-backdrop"
     );
-    
+
+
+// Global chat
+
 if (globalChatButton) {
 
     globalChatButton.addEventListener(
@@ -172,6 +244,9 @@ if (globalChatButton) {
         }
     );
 }
+
+
+// Mobile sidebar
 
 function isMobile() {
 
@@ -272,6 +347,9 @@ if (mobileSidebarBackdrop) {
     );
 }
 
+
+// Screens
+
 function hideAllScreens() {
 
     if (authScreen) {
@@ -328,6 +406,9 @@ function showChatScreen() {
     }
 }
 
+
+// Errors
+
 function showError(
     element,
     message
@@ -358,6 +439,9 @@ function clearError(
     element.style.display =
         "none";
 }
+
+
+// Google login
 
 function resetGoogleButton() {
 
@@ -408,8 +492,6 @@ async function startGoogleLogin() {
     clearError(
         authError
     );
-
-    // Already opening
 
     if (
         googleAuthPopup &&
@@ -467,7 +549,7 @@ async function startGoogleLogin() {
 
         showError(
             authError,
-            "Google login popup was blocked. Please allow popups for ChudChat."
+            "Google login popup was blocked. Please allow popups for OpenTalk."
         );
 
         resetGoogleButton();
@@ -694,7 +776,8 @@ if (googleLogin) {
     );
 }
 
-// listens for the login result posted by auth-callback.html
+
+// OAuth callback
 
 window.addEventListener(
     "message",
@@ -805,6 +888,9 @@ window.addEventListener(
     }
 );
 
+
+// Profile loading
+
 async function loadProfile() {
 
     if (!currentUser) {
@@ -843,6 +929,9 @@ async function loadProfile() {
 
     return data;
 }
+
+
+// User initialization
 
 async function initializeUser() {
 
@@ -980,6 +1069,9 @@ function createUsernameSuggestion(
     return value;
 }
 
+
+// Initial profile setup
+
 if (profileForm) {
 
     profileForm.addEventListener(
@@ -988,7 +1080,9 @@ if (profileForm) {
 
             event.preventDefault();
 
-            clearError(profileError);
+            clearError(
+                profileError
+            );
 
             if (!currentUser) {
 
@@ -1048,7 +1142,10 @@ if (profileForm) {
                 await client
                     .from("profiles")
                     .select("id")
-                    .eq("username", username)
+                    .eq(
+                        "username",
+                        username
+                    )
                     .maybeSingle();
 
             if (usernameCheckError) {
@@ -1070,9 +1167,9 @@ if (profileForm) {
             }
 
             if (
-    existingUsername &&
-    existingUsername.id !== currentUser.id
-) {
+                existingUsername &&
+                existingUsername.id !== currentUser.id
+            ) {
 
                 button.disabled = false;
                 button.textContent = "Continue";
@@ -1088,46 +1185,57 @@ if (profileForm) {
                 return;
             }
 
-button.textContent = "Saving...";
+            button.textContent =
+                "Saving...";
 
-let data;
-let error;
+            let data;
+            let error;
 
-if (currentProfile) {
+            if (currentProfile) {
 
-    const result =
-        await client
-            .from("profiles")
-            .update({
-                username,
-                display_name: displayName
-            })
-            .eq(
-                "id",
-                currentUser.id
-            )
-            .select()
-            .single();
+                const result =
+                    await client
+                        .from("profiles")
+                        .update({
 
-    data = result.data;
-    error = result.error;
+                            username,
 
-} else {
+                            display_name:
+                                displayName
 
-    const result =
-        await client
-            .from("profiles")
-            .insert({
-                id: currentUser.id,
-                username,
-                display_name: displayName
-            })
-            .select()
-            .single();
+                        })
+                        .eq(
+                            "id",
+                            currentUser.id
+                        )
+                        .select()
+                        .single();
 
-    data = result.data;
-    error = result.error;
-}
+                data = result.data;
+                error = result.error;
+
+            } else {
+
+                const result =
+                    await client
+                        .from("profiles")
+                        .insert({
+
+                            id:
+                                currentUser.id,
+
+                            username,
+
+                            display_name:
+                                displayName
+
+                        })
+                        .select()
+                        .single();
+
+                data = result.data;
+                error = result.error;
+            }
 
             if (error) {
 
@@ -1139,7 +1247,6 @@ if (currentProfile) {
                 button.disabled = false;
                 button.textContent = "Continue";
 
-                // Username collision
                 if (
                     error.code === "23505" &&
                     (
@@ -1163,15 +1270,9 @@ if (currentProfile) {
                     return;
                 }
 
-                // Profile already exists
                 if (
                     error.code === "23505"
                 ) {
-
-                    console.error(
-                        "Unique constraint violation:",
-                        error.constraint
-                    );
 
                     showError(
                         profileError,
@@ -1193,11 +1294,6 @@ if (currentProfile) {
             currentProfile =
                 data;
 
-            console.log(
-                "Profile created:",
-                currentProfile
-            );
-
             button.disabled = false;
             button.textContent = "Continue";
 
@@ -1205,6 +1301,412 @@ if (currentProfile) {
         }
     );
 }
+
+
+// Profile customization
+
+function openProfileSettings() {
+
+    if (
+        !currentProfile ||
+        !currentUser ||
+        !profileSettings
+    ) {
+        return;
+    }
+
+    clearError(
+        profileSettingsError
+    );
+
+    settingsAvatarUrl.value =
+        currentProfile.avatar_url ||
+        "";
+
+    settingsDisplayName.value =
+        currentProfile.display_name ||
+        "";
+
+    settingsUsername.value =
+        currentProfile.username ||
+        "";
+
+    updateProfilePreview();
+
+    profileSettings.classList.remove(
+        "hidden"
+    );
+}
+
+function closeProfileSettingsPanel() {
+
+    if (!profileSettings) {
+        return;
+    }
+
+    profileSettings.classList.add(
+        "hidden"
+    );
+
+    clearError(
+        profileSettingsError
+    );
+}
+
+function updateProfilePreview() {
+
+    if (
+        !profilePreviewAvatar ||
+        !profilePreviewName ||
+        !profilePreviewUsername
+    ) {
+        return;
+    }
+
+    const displayName =
+        settingsDisplayName.value.trim() ||
+        "User";
+
+    const username =
+        settingsUsername.value.trim() ||
+        "user";
+
+    const avatarUrl =
+        settingsAvatarUrl.value.trim();
+
+    profilePreviewName.textContent =
+        displayName;
+
+    profilePreviewUsername.textContent =
+        `@${username}`;
+
+    if (avatarUrl) {
+
+        profilePreviewAvatar.innerHTML = `
+            <img
+                src="${escapeHtml(avatarUrl)}"
+                alt=""
+            >
+        `;
+
+    } else {
+
+        profilePreviewAvatar.textContent =
+            getInitial(
+                displayName
+            );
+    }
+}
+
+function updateCurrentUserAvatar() {
+
+    if (!currentUserAvatar) {
+        return;
+    }
+
+    const avatarUrl =
+        currentProfile?.avatar_url;
+
+    if (avatarUrl) {
+
+        currentUserAvatar.innerHTML = `
+            <img
+                src="${escapeHtml(avatarUrl)}"
+                alt=""
+            >
+        `;
+
+    } else {
+
+        currentUserAvatar.textContent =
+            getInitial(
+                currentProfile?.display_name
+            );
+    }
+}
+
+if (profileButton) {
+
+    profileButton.addEventListener(
+        "click",
+        openProfileSettings
+    );
+}
+
+if (closeProfileSettings) {
+
+    closeProfileSettings.addEventListener(
+        "click",
+        closeProfileSettingsPanel
+    );
+}
+
+if (cancelProfileSettings) {
+
+    cancelProfileSettings.addEventListener(
+        "click",
+        closeProfileSettingsPanel
+    );
+}
+
+if (settingsDisplayName) {
+
+    settingsDisplayName.addEventListener(
+        "input",
+        updateProfilePreview
+    );
+}
+
+if (settingsUsername) {
+
+    settingsUsername.addEventListener(
+        "input",
+        updateProfilePreview
+    );
+}
+
+if (settingsAvatarUrl) {
+
+    settingsAvatarUrl.addEventListener(
+        "input",
+        updateProfilePreview
+    );
+}
+
+if (profileSettingsForm) {
+
+    profileSettingsForm.addEventListener(
+        "submit",
+        async (event) => {
+
+            event.preventDefault();
+
+            clearError(
+                profileSettingsError
+            );
+
+            if (
+                !currentUser ||
+                !currentProfile
+            ) {
+                return;
+            }
+
+            const username =
+                settingsUsername.value
+                    .trim()
+                    .toLowerCase();
+
+            const displayName =
+                settingsDisplayName.value
+                    .trim();
+
+            const avatarUrl =
+                settingsAvatarUrl.value
+                    .trim();
+
+            if (
+                !/^[a-z0-9_]{3,24}$/.test(
+                    username
+                )
+            ) {
+
+                showError(
+                    profileSettingsError,
+                    "Username must be 3-24 characters and contain only letters, numbers, and underscores."
+                );
+
+                settingsUsername.focus();
+
+                return;
+            }
+
+            if (!displayName) {
+
+                showError(
+                    profileSettingsError,
+                    "Please enter a display name."
+                );
+
+                settingsDisplayName.focus();
+
+                return;
+            }
+
+            if (
+                avatarUrl &&
+                !/^https?:\/\/.+/i.test(
+                    avatarUrl
+                )
+            ) {
+
+                showError(
+                    profileSettingsError,
+                    "Avatar URL must start with http:// or https://."
+                );
+
+                settingsAvatarUrl.focus();
+
+                return;
+            }
+
+            const button =
+                profileSettingsForm.querySelector(
+                    "button[type='submit']"
+                );
+
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Checking...";
+
+            // stupid shit: check the username before Supabase gets angry
+
+            const {
+                data: existingUsername,
+                error: usernameError
+            } =
+                await client
+                    .from("profiles")
+                    .select("id")
+                    .eq(
+                        "username",
+                        username
+                    )
+                    .maybeSingle();
+
+            if (usernameError) {
+
+                console.error(
+                    "PROFILE USERNAME CHECK ERROR:",
+                    usernameError
+                );
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Save changes";
+
+                showError(
+                    profileSettingsError,
+                    "Could not check username. Please try again."
+                );
+
+                return;
+            }
+
+            if (
+                existingUsername &&
+                existingUsername.id !== currentUser.id
+            ) {
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Save changes";
+
+                showError(
+                    profileSettingsError,
+                    "That username is already taken."
+                );
+
+                settingsUsername.focus();
+                settingsUsername.select();
+
+                return;
+            }
+
+            button.textContent =
+                "Saving...";
+
+            const {
+                data,
+                error
+            } =
+                await client
+                    .from("profiles")
+                    .update({
+
+                        username,
+
+                        display_name:
+                            displayName,
+
+                        avatar_url:
+                            avatarUrl ||
+                            null
+
+                    })
+                    .eq(
+                        "id",
+                        currentUser.id
+                    )
+                    .select()
+                    .single();
+
+            if (error) {
+
+                console.error(
+                    "PROFILE UPDATE ERROR:",
+                    error
+                );
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Save changes";
+
+                if (
+                    error.code === "23505"
+                ) {
+
+                    showError(
+                        profileSettingsError,
+                        "That username is already taken."
+                    );
+
+                    settingsUsername.focus();
+
+                    return;
+                }
+
+                showError(
+                    profileSettingsError,
+                    error.message ||
+                    "Failed to update your profile."
+                );
+
+                return;
+            }
+
+            currentProfile =
+                data;
+
+            currentUserElement.textContent =
+                currentProfile.display_name;
+
+            updateCurrentUserAvatar();
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "Save changes";
+
+            closeProfileSettingsPanel();
+
+            // Refresh the sidebar because profile information changed.
+            await loadUsers();
+        }
+    );
+}
+
+
+// Users
 
 async function loadUsers() {
 
@@ -1233,12 +1735,6 @@ async function loadUsers() {
             .neq(
                 "id",
                 currentUser.id
-            )
-            .order(
-                "display_name",
-                {
-                    ascending: true
-                }
             );
 
     if (error) {
@@ -1259,6 +1755,28 @@ async function loadUsers() {
 
     allUsers =
         data || [];
+
+    renderUsers(
+        allUsers
+    );
+}
+
+function markUserRecentlyMessaged(
+    userId
+) {
+
+    if (!userId) {
+        return;
+    }
+
+    recentUserIds =
+        recentUserIds.filter(
+            id => id !== userId
+        );
+
+    recentUserIds.unshift(
+        userId
+    );
 
     renderUsers(
         allUsers
@@ -1290,8 +1808,48 @@ function renderUsers(
         return;
     }
 
+    const sortedUsers =
+        [...users].sort(
+            (a, b) => {
+
+                const aIndex =
+                    recentUserIds.indexOf(
+                        a.id
+                    );
+
+                const bIndex =
+                    recentUserIds.indexOf(
+                        b.id
+                    );
+
+                if (
+                    aIndex === -1 &&
+                    bIndex === -1
+                ) {
+
+                    return (
+                        a.display_name ||
+                        ""
+                    ).localeCompare(
+                        b.display_name ||
+                        ""
+                    );
+                }
+
+                if (aIndex === -1) {
+                    return 1;
+                }
+
+                if (bIndex === -1) {
+                    return -1;
+                }
+
+                return aIndex - bIndex;
+            }
+        );
+
     for (
-        const user of users
+        const user of sortedUsers
     ) {
 
         const element =
@@ -1310,11 +1868,25 @@ function renderUsers(
 
         element.innerHTML = `
             <div class="user-avatar">
-                ${escapeHtml(
-                    getInitial(
-                        user.display_name
-                    )
-                )}
+
+                ${
+                    user.avatar_url
+                        ? `
+                            <img
+                                src="${escapeHtml(
+                                    user.avatar_url
+                                )}"
+                                alt=""
+                            >
+                        `
+                        :
+                        escapeHtml(
+                            getInitial(
+                                user.display_name
+                            )
+                        )
+                }
+
             </div>
 
             <div class="user-info">
@@ -1335,16 +1907,16 @@ function renderUsers(
         `;
 
         element.addEventListener(
-    "click",
-    () => {
+            "click",
+            () => {
 
-        closeMobileSidebar();
+                closeMobileSidebar();
 
-        openConversation(
-            user
+                openConversation(
+                    user
+                );
+            }
         );
-    }
-);
 
         userList.appendChild(
             element
@@ -1404,6 +1976,9 @@ if (userSearch) {
     );
 }
 
+
+// Utilities
+
 function getInitial(
     name
 ) {
@@ -1433,6 +2008,9 @@ function escapeHtml(
     return div.innerHTML;
 }
 
+
+// Conversations
+
 async function openConversation(
     user
 ) {
@@ -1456,11 +2034,25 @@ async function openConversation(
 
         conversationUser.innerHTML = `
             <div class="conversation-avatar">
-                ${escapeHtml(
-                    getInitial(
-                        user.display_name
-                    )
-                )}
+
+                ${
+                    user.avatar_url
+                        ? `
+                            <img
+                                src="${escapeHtml(
+                                    user.avatar_url
+                                )}"
+                                alt=""
+                            >
+                        `
+                        :
+                        escapeHtml(
+                            getInitial(
+                                user.display_name
+                            )
+                        )
+                }
+
             </div>
 
             <div>
@@ -1517,6 +2109,10 @@ async function openConversation(
 
     currentConversationUser =
         user;
+
+    markUserRecentlyMessaged(
+        user.id
+    );
 
     await stopRealtime();
 
@@ -1716,6 +2312,9 @@ function addMessage(
         messages.scrollHeight;
 }
 
+
+// Messaging
+
 async function sendMessage(
     content
 ) {
@@ -1733,6 +2332,7 @@ async function sendMessage(
         await client
             .from("messages")
             .insert({
+
                 user_id:
                     currentUser.id,
 
@@ -1804,6 +2404,9 @@ if (messageForm) {
     );
 }
 
+
+// Realtime
+
 async function startConversationRealtime() {
 
     await stopRealtime();
@@ -1874,6 +2477,18 @@ async function startConversationRealtime() {
 
                         profile
                     });
+
+                    // Keep the active conversation near the top.
+                    if (
+                        currentConversationUser &&
+                        payload.new.user_id ===
+                            currentUser?.id
+                    ) {
+
+                        markUserRecentlyMessaged(
+                            currentConversationUser.id
+                        );
+                    }
                 }
             )
             .subscribe(
@@ -1917,6 +2532,9 @@ async function stopRealtime() {
         null;
 }
 
+
+// Start chat
+
 async function startChat() {
 
     if (
@@ -1928,6 +2546,8 @@ async function startChat() {
 
     currentUserElement.textContent =
         currentProfile.display_name;
+
+    updateCurrentUserAvatar();
 
     showChatScreen();
 
@@ -1955,6 +2575,9 @@ async function startChat() {
         "Ready";
 }
 
+
+// Logout
+
 if (logoutButton) {
 
     logoutButton.addEventListener(
@@ -1964,6 +2587,8 @@ if (logoutButton) {
             await stopRealtime();
 
             closeGooglePopup();
+
+            closeProfileSettingsPanel();
 
             const {
                 error
@@ -1995,6 +2620,9 @@ if (logoutButton) {
             allUsers =
                 [];
 
+            recentUserIds =
+                [];
+
             displayedMessageIds.clear();
 
             if (messages) {
@@ -2010,6 +2638,9 @@ if (logoutButton) {
         }
     );
 }
+
+
+// Session
 
 async function checkSession() {
 
@@ -2113,8 +2744,9 @@ client.auth.onAuthStateChange(
     }
 );
 
+
 console.log(
-    "Starting ChudChat..."
+    "Starting OpenTalk..."
 );
 
 checkSession();

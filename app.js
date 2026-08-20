@@ -1,83 +1,156 @@
 const SUPABASE_URL = "https://vkelkgabycpxojybguvj.supabase.co";
 const SUPABASE_KEY = "sb_publishable_LntMHz6esPpIJszjXzzAzw_W-FVSljU";
+
 const AVATAR_BUCKET = "avatars";
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
 
-const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const REDIRECT_URL = new URL("auth-callback.html", window.location.href).href;
+const client =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+const REDIRECT_URL =
+    new URL(
+        "auth-callback.html",
+        window.location.href
+    ).href;
+
+
+// ============================================================
+// STATE
+// ============================================================
 
 let currentUser = null;
 let currentProfile = null;
+
 let currentConversationId = null;
 let currentConversationUser = null;
+
 let realtimeChannel = null;
+
 let allUsers = [];
+
 let initializingUser = false;
 let editingProfile = false;
+
 let selectedAvatarFile = null;
+
 let googleAuthPopup = null;
 let googleAuthTimeout = null;
 
 const displayedMessageIds = new Set();
+
 const avatarObjectUrls = new Map();
 
-const $ = id => document.getElementById(id);
 
-const authScreen = $("auth-screen");
-const profileScreen = $("profile-screen");
-const chatScreen = $("chat-screen");
+// ============================================================
+// DOM
+// ============================================================
 
-const googleLogin = $("google-login");
+const $ = id =>
+    document.getElementById(id);
 
-const profileForm = $("profile-form");
-const profileUsername = $("profile-username");
-const profileDisplayName = $("profile-display-name");
+const authScreen =
+    $("auth-screen");
+
+const profileScreen =
+    $("profile-screen");
+
+const chatScreen =
+    $("chat-screen");
+
+const googleLogin =
+    $("google-login");
+
+const profileForm =
+    $("profile-form");
+
+const profileUsername =
+    $("profile-username");
+
+const profileDisplayName =
+    $("profile-display-name");
 
 const profileCustomizeButton =
     $("profile-customize-button") ||
     $("edit-profile-button") ||
     $("profile-button");
 
-const authError = $("auth-error");
-const profileError = $("profile-error");
+const authError =
+    $("auth-error");
 
-const status = $("status");
-const currentUserElement = $("current-user");
-const userSearch = $("user-search");
-const userList = $("user-list");
-const conversationUser = $("conversation-user");
-const messages = $("messages");
-const messageForm = $("message-form");
-const messageInput = $("message");
-const logoutButton = $("logout-button");
+const profileError =
+    $("profile-error");
 
-const userSidebar = $("user-sidebar");
-const mobileChatSelector = $("mobile-chat-selector");
-const mobileSidebarBackdrop = $("mobile-sidebar-backdrop");
+const status =
+    $("status");
 
-const globalChatButton = $("global-chat-button");
-// stupid shit, leave global chat alone for now
+const currentUserElement =
+    $("current-user");
 
+const userSearch =
+    $("user-search");
+
+const userList =
+    $("user-list");
+
+const conversationUser =
+    $("conversation-user");
+
+const messages =
+    $("messages");
+
+const messageForm =
+    $("message-form");
+
+const messageInput =
+    $("message");
+
+const logoutButton =
+    $("logout-button");
+
+const userSidebar =
+    $("user-sidebar");
+
+const mobileChatSelector =
+    $("mobile-chat-selector");
+
+const mobileSidebarBackdrop =
+    $("mobile-sidebar-backdrop");
+
+const globalChatButton =
+    $("global-chat-button");
+
+
+// Avatar controls are created dynamically.
 let profileAvatarInput = null;
 let profileAvatarPreview = null;
 let profileAvatarRemoveButton = null;
 
 
-// ------------------------------------------------------------
-// Mobile
-// ------------------------------------------------------------
+// ============================================================
+// MOBILE
+// ============================================================
 
 function isMobile() {
-    return window.matchMedia("(max-width: 700px)").matches;
+    return window.matchMedia(
+        "(max-width: 700px)"
+    ).matches;
 }
 
 function openMobileSidebar() {
 
-    if (!isMobile() || !userSidebar) {
+    if (
+        !isMobile() ||
+        !userSidebar
+    ) {
         return;
     }
 
-    userSidebar.classList.add("mobile-open");
+    userSidebar.classList.add(
+        "mobile-open"
+    );
 
     mobileSidebarBackdrop?.classList.add(
         "mobile-visible"
@@ -137,8 +210,7 @@ mobileSidebarBackdrop?.addEventListener(
 );
 
 
-// Global chat intentionally untouched.
-
+// Global chat remains untouched.
 globalChatButton?.addEventListener(
     "click",
     () => {
@@ -152,15 +224,23 @@ globalChatButton?.addEventListener(
 );
 
 
-// ------------------------------------------------------------
-// Screens
-// ------------------------------------------------------------
+// ============================================================
+// SCREENS
+// ============================================================
 
 function hideAllScreens() {
 
-    authScreen?.classList.add("hidden");
-    profileScreen?.classList.add("hidden");
-    chatScreen?.classList.add("hidden");
+    authScreen?.classList.add(
+        "hidden"
+    );
+
+    profileScreen?.classList.add(
+        "hidden"
+    );
+
+    chatScreen?.classList.add(
+        "hidden"
+    );
 }
 
 function showLoginScreen() {
@@ -195,9 +275,9 @@ function showChatScreen() {
 }
 
 
-// ------------------------------------------------------------
-// Errors
-// ------------------------------------------------------------
+// ============================================================
+// ERRORS
+// ============================================================
 
 function showError(
     element,
@@ -208,8 +288,11 @@ function showError(
         return;
     }
 
-    element.textContent = message;
-    element.style.display = "block";
+    element.textContent =
+        message;
+
+    element.style.display =
+        "block";
 }
 
 function clearError(element) {
@@ -218,14 +301,17 @@ function clearError(element) {
         return;
     }
 
-    element.textContent = "";
-    element.style.display = "none";
+    element.textContent =
+        "";
+
+    element.style.display =
+        "none";
 }
 
 
-// ------------------------------------------------------------
-// Google login
-// ------------------------------------------------------------
+// ============================================================
+// GOOGLE LOGIN
+// ============================================================
 
 function resetGoogleButton() {
 
@@ -233,7 +319,8 @@ function resetGoogleButton() {
         return;
     }
 
-    googleLogin.disabled = false;
+    googleLogin.disabled =
+        false;
 
     googleLogin.innerHTML = `
         <span class="google-icon">
@@ -252,7 +339,8 @@ function setGoogleButtonLoading() {
         return;
     }
 
-    googleLogin.disabled = true;
+    googleLogin.disabled =
+        true;
 
     googleLogin.innerHTML = `
         <span class="google-icon">
@@ -453,7 +541,8 @@ function startGooglePopupWatcher() {
                         googleAuthTimeout
                     );
 
-                    googleAuthTimeout = null;
+                    googleAuthTimeout =
+                        null;
 
                     closeGooglePopup();
 
@@ -471,7 +560,8 @@ function closeGooglePopup() {
         googleAuthTimeout
     );
 
-    googleAuthTimeout = null;
+    googleAuthTimeout =
+        null;
 
     if (
         googleAuthPopup &&
@@ -483,7 +573,8 @@ function closeGooglePopup() {
         } catch {}
     }
 
-    googleAuthPopup = null;
+    googleAuthPopup =
+        null;
 }
 
 googleLogin?.addEventListener(
@@ -492,9 +583,9 @@ googleLogin?.addEventListener(
 );
 
 
-// ------------------------------------------------------------
-// Auth callback
-// ------------------------------------------------------------
+// ============================================================
+// AUTH CALLBACK
+// ============================================================
 
 window.addEventListener(
     "message",
@@ -579,9 +670,9 @@ window.addEventListener(
 );
 
 
-// ------------------------------------------------------------
-// Profile
-// ------------------------------------------------------------
+// ============================================================
+// PROFILE
+// ============================================================
 
 async function loadProfile() {
 
@@ -651,9 +742,9 @@ function createUsernameSuggestion(
 }
 
 
-// ------------------------------------------------------------
-// Profile picture
-// ------------------------------------------------------------
+// ============================================================
+// PROFILE PICTURE PICKER
+// ============================================================
 
 function ensureProfileAvatarPicker() {
 
@@ -672,14 +763,13 @@ function ensureProfileAvatarPicker() {
     wrapper.id =
         "profile-avatar-picker";
 
-    wrapper.style.cssText =
-        `
+    wrapper.style.cssText = `
         display:flex;
         flex-direction:column;
         align-items:center;
         gap:10px;
         margin-bottom:16px;
-        `;
+    `;
 
     profileAvatarPreview =
         document.createElement(
@@ -689,10 +779,10 @@ function ensureProfileAvatarPicker() {
     profileAvatarPreview.className =
         "profile-avatar-preview";
 
-    profileAvatarPreview.style.cssText =
-        `
+    profileAvatarPreview.style.cssText = `
         width:76px;
         height:76px;
+        min-width:76px;
         border-radius:50%;
         overflow:hidden;
         display:flex;
@@ -704,7 +794,7 @@ function ensureProfileAvatarPicker() {
         font-size:24px;
         font-weight:700;
         font-family:ui-monospace,monospace;
-        `;
+    `;
 
     const label =
         document.createElement(
@@ -714,13 +804,12 @@ function ensureProfileAvatarPicker() {
     label.textContent =
         "Choose profile picture";
 
-    label.style.cssText =
-        `
+    label.style.cssText = `
         cursor:pointer;
         color:#ff78c8;
         font-size:12px;
         font-family:ui-monospace,monospace;
-        `;
+    `;
 
     profileAvatarInput =
         document.createElement(
@@ -759,15 +848,14 @@ function ensureProfileAvatarPicker() {
     profileAvatarRemoveButton.textContent =
         "Remove picture";
 
-    profileAvatarRemoveButton.style.cssText =
-        `
+    profileAvatarRemoveButton.style.cssText = `
         display:none;
         border:0;
         background:none;
         color:#aa9caf;
         cursor:pointer;
         font-size:11px;
-        `;
+    `;
 
     profileAvatarRemoveButton.addEventListener(
         "click",
@@ -789,10 +877,12 @@ function ensureProfileAvatarPicker() {
 
 function removeSelectedAvatar() {
 
-    selectedAvatarFile = null;
+    selectedAvatarFile =
+        null;
 
     if (profileAvatarInput) {
-        profileAvatarInput.value = "";
+        profileAvatarInput.value =
+            "";
     }
 
     if (profileAvatarPreview) {
@@ -838,7 +928,8 @@ function handleAvatarSelection(
             "Please choose an image file."
         );
 
-        event.target.value = "";
+        event.target.value =
+            "";
 
         return;
     }
@@ -853,7 +944,8 @@ function handleAvatarSelection(
             "Profile pictures must be smaller than 5 MB."
         );
 
-        event.target.value = "";
+        event.target.value =
+            "";
 
         return;
     }
@@ -875,8 +967,7 @@ function handleAvatarSelection(
                 return;
             }
 
-            profileAvatarPreview.innerHTML =
-                `
+            profileAvatarPreview.innerHTML = `
                 <img
                     src="${reader.result}"
                     alt=""
@@ -886,7 +977,7 @@ function handleAvatarSelection(
                         object-fit:cover;
                     "
                 >
-                `;
+            `;
 
             if (
                 profileAvatarRemoveButton
@@ -902,109 +993,12 @@ function handleAvatarSelection(
     );
 }
 
-async function updateProfileAvatarPreview(
-    profile
-) {
 
-    ensureProfileAvatarPicker();
+// ============================================================
+// AVATAR STORAGE
+// ============================================================
 
-    if (
-        !profileAvatarPreview ||
-        selectedAvatarFile
-    ) {
-        return;
-    }
-
-    if (
-        profile?.avatar_url
-    ) {
-
-        const url =
-            await resolveAvatarUrl(
-                profile.avatar_url
-            );
-
-        if (url) {
-
-            profileAvatarPreview.innerHTML =
-                `
-                <img
-                    src="${escapeHtml(url)}"
-                    alt=""
-                    style="
-                        width:100%;
-                        height:100%;
-                        object-fit:cover;
-                    "
-                >
-                `;
-
-            if (
-                profileAvatarRemoveButton
-            ) {
-
-                profileAvatarRemoveButton.style.display =
-                    "block";
-            }
-
-            return;
-        }
-    }
-
-    const metadata =
-        currentUser?.user_metadata ||
-        {};
-
-    const googleAvatar =
-        metadata.avatar_url ||
-        metadata.picture ||
-        "";
-
-    if (googleAvatar) {
-
-        profileAvatarPreview.innerHTML =
-            `
-            <img
-                src="${escapeHtml(googleAvatar)}"
-                alt=""
-                style="
-                    width:100%;
-                    height:100%;
-                    object-fit:cover;
-                "
-            >
-            `;
-
-        if (
-            profileAvatarRemoveButton
-        ) {
-
-            profileAvatarRemoveButton.style.display =
-                "block";
-        }
-
-        return;
-    }
-
-    profileAvatarPreview.textContent =
-        getInitial(
-            profile?.display_name ||
-            metadata.full_name ||
-            metadata.name
-        );
-
-    if (
-        profileAvatarRemoveButton
-    ) {
-
-        profileAvatarRemoveButton.style.display =
-            "none";
-    }
-}
-
-async function uploadAvatar(
-    file
-) {
+async function uploadAvatar(file) {
 
     if (
         !currentUser ||
@@ -1034,9 +1028,7 @@ async function uploadAvatar(
         error
     } =
         await client.storage
-            .from(
-                AVATAR_BUCKET
-            )
+            .from(AVATAR_BUCKET)
             .upload(
                 path,
                 file,
@@ -1062,7 +1054,6 @@ async function uploadAvatar(
         return null;
     }
 
-    // Store the storage path instead of a temporary/browser URL.
     return path;
 }
 
@@ -1074,7 +1065,7 @@ function avatarStoragePath(
         return null;
     }
 
-    // New profiles store the path directly.
+    // Stored storage path.
     if (
         !value.startsWith("http")
     ) {
@@ -1122,11 +1113,11 @@ function avatarStoragePath(
 }
 
 async function deleteAvatar(
-    avatarUrl
+    avatarValue
 ) {
 
     if (
-        !avatarUrl ||
+        !avatarValue ||
         !currentUser
     ) {
         return;
@@ -1134,7 +1125,7 @@ async function deleteAvatar(
 
     const path =
         avatarStoragePath(
-            avatarUrl
+            avatarValue
         );
 
     if (
@@ -1150,9 +1141,7 @@ async function deleteAvatar(
         error
     } =
         await client.storage
-            .from(
-                AVATAR_BUCKET
-            )
+            .from(AVATAR_BUCKET)
             .remove([
                 path
             ]);
@@ -1179,7 +1168,7 @@ async function resolveAvatarUrl(
             avatarValue
         );
 
-    // Google/external avatar.
+    // External URL, e.g. Google.
     if (!path) {
         return avatarValue;
     }
@@ -1198,15 +1187,13 @@ async function resolveAvatarUrl(
         );
     }
 
-    // Signed URLs work with private buckets too.
+    // Try signed URL first.
     const {
         data: signed,
         error: signedError
     } =
         await client.storage
-            .from(
-                AVATAR_BUCKET
-            )
+            .from(AVATAR_BUCKET)
             .createSignedUrl(
                 path,
                 3600
@@ -1225,15 +1212,13 @@ async function resolveAvatarUrl(
         return signed.signedUrl;
     }
 
-    // Fallback for buckets where download is allowed.
+    // Try download.
     const {
         data: blob,
         error: downloadError
     } =
         await client.storage
-            .from(
-                AVATAR_BUCKET
-            )
+            .from(AVATAR_BUCKET)
             .download(
                 path
             );
@@ -1256,29 +1241,127 @@ async function resolveAvatarUrl(
         return objectUrl;
     }
 
-    // Final fallback for public buckets.
+    // Try public URL.
     const {
         data: publicData
     } =
         client.storage
-            .from(
-                AVATAR_BUCKET
-            )
+            .from(AVATAR_BUCKET)
             .getPublicUrl(
                 path
             );
 
     return (
         publicData?.publicUrl ||
-        (
-            avatarValue.startsWith(
-                "http"
-            )
-                ? avatarValue
-                : null
-        )
+        null
     );
 }
+
+
+// ============================================================
+// PROFILE AVATAR PREVIEW
+// ============================================================
+
+async function updateProfileAvatarPreview(
+    profile
+) {
+
+    ensureProfileAvatarPicker();
+
+    if (
+        !profileAvatarPreview ||
+        selectedAvatarFile
+    ) {
+        return;
+    }
+
+    if (profile?.avatar_url) {
+
+        const url =
+            await resolveAvatarUrl(
+                profile.avatar_url
+            );
+
+        if (url) {
+
+            profileAvatarPreview.innerHTML = `
+                <img
+                    src="${escapeHtml(url)}"
+                    alt=""
+                    style="
+                        width:100%;
+                        height:100%;
+                        object-fit:cover;
+                    "
+                >
+            `;
+
+            if (
+                profileAvatarRemoveButton
+            ) {
+
+                profileAvatarRemoveButton.style.display =
+                    "block";
+            }
+
+            return;
+        }
+    }
+
+    const metadata =
+        currentUser?.user_metadata ||
+        {};
+
+    const googleAvatar =
+        metadata.avatar_url ||
+        metadata.picture ||
+        "";
+
+    if (googleAvatar) {
+
+        profileAvatarPreview.innerHTML = `
+            <img
+                src="${escapeHtml(googleAvatar)}"
+                alt=""
+                style="
+                    width:100%;
+                    height:100%;
+                    object-fit:cover;
+                "
+            >
+        `;
+
+        if (
+            profileAvatarRemoveButton
+        ) {
+
+            profileAvatarRemoveButton.style.display =
+                "block";
+        }
+
+        return;
+    }
+
+    profileAvatarPreview.textContent =
+        getInitial(
+            profile?.display_name ||
+            metadata.full_name ||
+            metadata.name
+        );
+
+    if (
+        profileAvatarRemoveButton
+    ) {
+
+        profileAvatarRemoveButton.style.display =
+            "none";
+    }
+}
+
+
+// ============================================================
+// PROFILE FORM
+// ============================================================
 
 function prepareProfileForm(
     profile
@@ -1286,10 +1369,12 @@ function prepareProfileForm(
 
     ensureProfileAvatarPicker();
 
-    selectedAvatarFile = null;
+    selectedAvatarFile =
+        null;
 
     if (profileAvatarInput) {
-        profileAvatarInput.value = "";
+        profileAvatarInput.value =
+            "";
     }
 
     if (profile) {
@@ -1336,7 +1421,8 @@ function openProfileEditor() {
         return;
     }
 
-    editingProfile = true;
+    editingProfile =
+        true;
 
     clearError(
         profileError
@@ -1357,9 +1443,9 @@ profileCustomizeButton?.addEventListener(
 );
 
 
-// ------------------------------------------------------------
-// User initialization
-// ------------------------------------------------------------
+// ============================================================
+// USER INITIALIZATION
+// ============================================================
 
 async function initializeUser() {
 
@@ -1370,7 +1456,8 @@ async function initializeUser() {
         return;
     }
 
-    initializingUser = true;
+    initializingUser =
+        true;
 
     try {
 
@@ -1385,7 +1472,8 @@ async function initializeUser() {
                 "New User"
         ) {
 
-            editingProfile = false;
+            editingProfile =
+                false;
 
             prepareProfileForm(
                 currentProfile
@@ -1406,299 +1494,484 @@ async function initializeUser() {
 
     } finally {
 
-        initializingUser = false;
+        initializingUser =
+            false;
     }
 }
 
 
-// ------------------------------------------------------------
-// Save profile
-// ------------------------------------------------------------
+// ============================================================
+// SAVE PROFILE
+// ============================================================
 
-if (profileForm) {
+profileForm?.addEventListener(
+    "submit",
+    async event => {
 
-    profileForm.addEventListener(
-        "submit",
-        async event => {
+        event.preventDefault();
 
-            event.preventDefault();
+        clearError(
+            profileError
+        );
 
-            clearError(
-                profileError
+        if (!currentUser) {
+
+            showError(
+                profileError,
+                "You are not logged in."
             );
 
-            if (!currentUser) {
+            return;
+        }
 
-                showError(
-                    profileError,
-                    "You are not logged in."
-                );
+        const username =
+            profileUsername.value
+                .trim()
+                .toLowerCase();
 
-                return;
-            }
+        const displayName =
+            profileDisplayName.value
+                .trim();
 
-            const username =
-                profileUsername.value
-                    .trim()
-                    .toLowerCase();
+        if (
+            !/^[a-z0-9_]{3,24}$/.test(
+                username
+            )
+        ) {
 
-            const displayName =
-                profileDisplayName.value
-                    .trim();
+            showError(
+                profileError,
+                "Username must be 3-24 characters and contain only letters, numbers, and underscores."
+            );
 
-            if (
-                !/^[a-z0-9_]{3,24}$/.test(
+            return;
+        }
+
+        if (!displayName) {
+
+            showError(
+                profileError,
+                "Please enter a display name."
+            );
+
+            return;
+        }
+
+        const button =
+            profileForm.querySelector(
+                "button[type='submit']"
+            );
+
+        if (button) {
+
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Checking...";
+        }
+
+        const {
+            data: existingUsername,
+            error: usernameCheckError
+        } =
+            await client
+                .from("profiles")
+                .select("id")
+                .eq(
+                    "username",
                     username
                 )
-            ) {
+                .maybeSingle();
 
-                showError(
-                    profileError,
-                    "Username must be 3-24 characters and contain only letters, numbers, and underscores."
-                );
-
-                return;
-            }
-
-            if (!displayName) {
-
-                showError(
-                    profileError,
-                    "Please enter a display name."
-                );
-
-                return;
-            }
-
-            const button =
-                profileForm.querySelector(
-                    "button[type='submit']"
-                );
+        if (usernameCheckError) {
 
             if (button) {
 
-                button.disabled = true;
-                button.textContent = "Checking...";
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Continue";
             }
 
-            const {
-                data: existingUsername,
-                error: usernameCheckError
-            } =
-                await client
-                    .from("profiles")
-                    .select("id")
-                    .eq(
-                        "username",
-                        username
-                    )
-                    .maybeSingle();
+            showError(
+                profileError,
+                "Could not check username. Please try again."
+            );
 
-            if (usernameCheckError) {
+            return;
+        }
+
+        if (
+            existingUsername &&
+            existingUsername.id !==
+                currentUser.id
+        ) {
+
+            if (button) {
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Continue";
+            }
+
+            showError(
+                profileError,
+                "That username is already taken. Please choose another one."
+            );
+
+            profileUsername.focus();
+            profileUsername.select();
+
+            return;
+        }
+
+
+        // ----------------------------------------------------
+        // Avatar
+        // ----------------------------------------------------
+
+        let avatarUrl =
+            currentProfile?.avatar_url ||
+            null;
+
+        if (selectedAvatarFile) {
+
+            if (button) {
+                button.textContent =
+                    "Uploading picture...";
+            }
+
+            const uploadedPath =
+                await uploadAvatar(
+                    selectedAvatarFile
+                );
+
+            if (!uploadedPath) {
 
                 if (button) {
 
-                    button.disabled = false;
-                    button.textContent = "Continue";
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Continue";
                 }
 
                 showError(
                     profileError,
-                    "Could not check username. Please try again."
+                    "Failed to upload profile picture. Make sure the avatars bucket exists and allows uploads."
                 );
 
                 return;
+            }
+
+            const oldAvatar =
+                avatarUrl;
+
+            avatarUrl =
+                uploadedPath;
+
+            if (oldAvatar) {
+
+                await deleteAvatar(
+                    oldAvatar
+                );
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // Save profile
+        // ----------------------------------------------------
+
+        if (button) {
+            button.textContent =
+                "Saving...";
+        }
+
+        const profileData = {
+
+            username,
+
+            display_name:
+                displayName,
+
+            avatar_url:
+                avatarUrl
+        };
+
+        let data;
+        let error;
+
+        if (currentProfile) {
+
+            const result =
+                await client
+                    .from("profiles")
+                    .update(
+                        profileData
+                    )
+                    .eq(
+                        "id",
+                        currentUser.id
+                    )
+                    .select()
+                    .single();
+
+            data =
+                result.data;
+
+            error =
+                result.error;
+
+        } else {
+
+            const result =
+                await client
+                    .from("profiles")
+                    .insert({
+                        id:
+                            currentUser.id,
+
+                        ...profileData
+                    })
+                    .select()
+                    .single();
+
+            data =
+                result.data;
+
+            error =
+                result.error;
+        }
+
+        if (error) {
+
+            console.error(
+                "PROFILE SAVE ERROR:",
+                error
+            );
+
+            if (button) {
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Continue";
             }
 
             if (
-                existingUsername &&
-                existingUsername.id !==
-                    currentUser.id
+                error.code ===
+                "23505"
             ) {
 
-                if (button) {
-
-                    button.disabled = false;
-                    button.textContent = "Continue";
-                }
-
                 showError(
                     profileError,
-                    "That username is already taken. Please choose another one."
-                );
-
-                profileUsername.focus();
-                profileUsername.select();
-
-                return;
-            }
-
-            let avatarUrl =
-                currentProfile?.avatar_url ||
-                null;
-
-            if (selectedAvatarFile) {
-
-                if (button) {
-                    button.textContent =
-                        "Uploading picture...";
-                }
-
-                const uploadedPath =
-                    await uploadAvatar(
-                        selectedAvatarFile
-                    );
-
-                if (!uploadedPath) {
-
-                    if (button) {
-
-                        button.disabled = false;
-                        button.textContent = "Continue";
-                    }
-
-                    showError(
-                        profileError,
-                        "Failed to upload profile picture. Make sure the avatars bucket exists and allows uploads."
-                    );
-
-                    return;
-                }
-
-                const oldAvatar =
-                    avatarUrl;
-
-                avatarUrl =
-                    uploadedPath;
-
-                if (oldAvatar) {
-
-                    await deleteAvatar(
-                        oldAvatar
-                    );
-                }
-            }
-
-            if (button) {
-                button.textContent = "Saving...";
-            }
-
-            const profileData = {
-
-                username,
-
-                display_name:
-                    displayName,
-
-                avatar_url:
-                    avatarUrl
-            };
-
-            let data;
-            let error;
-
-            if (currentProfile) {
-
-                const result =
-                    await client
-                        .from("profiles")
-                        .update(
-                            profileData
-                        )
-                        .eq(
-                            "id",
-                            currentUser.id
-                        )
-                        .select()
-                        .single();
-
-                data =
-                    result.data;
-
-                error =
-                    result.error;
-
-            } else {
-
-                const result =
-                    await client
-                        .from("profiles")
-                        .insert({
-                            id:
-                                currentUser.id,
-
-                            ...profileData
-                        })
-                        .select()
-                        .single();
-
-                data =
-                    result.data;
-
-                error =
-                    result.error;
-            }
-
-            if (error) {
-
-                console.error(
-                    "PROFILE SAVE ERROR:",
-                    error
-                );
-
-                if (button) {
-
-                    button.disabled = false;
-                    button.textContent = "Continue";
-                }
-
-                if (
-                    error.code ===
-                    "23505"
-                ) {
-
-                    showError(
-                        profileError,
-                        error.message
-                            ?.toLowerCase()
-                            .includes("username")
-                            ? "That username was just taken. Please choose another one."
-                            : "Your profile already exists. Please try again."
-                    );
-
-                    return;
-                }
-
-                showError(
-                    profileError,
-                    error.message ||
-                    "Failed to save your profile."
+                    "That username was just taken. Please choose another one."
                 );
 
                 return;
             }
 
-            currentProfile =
-                data;
+            showError(
+                profileError,
+                error.message ||
+                "Failed to save your profile."
+            );
 
-            editingProfile = false;
-            selectedAvatarFile = null;
-
-            if (button) {
-
-                button.disabled = false;
-                button.textContent = "Continue";
-            }
-
-            await startChat();
+            return;
         }
-    );
+
+        currentProfile =
+            data;
+
+        editingProfile =
+            false;
+
+        selectedAvatarFile =
+            null;
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "Continue";
+        }
+
+        // Clear cached avatar URLs so the newly uploaded
+        // image is resolved again.
+        avatarObjectUrls.clear();
+
+        await startChat();
+    }
+);
+
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function getInitial(name) {
+
+    if (!name) {
+        return "?";
+    }
+
+    return name
+        .trim()
+        .charAt(0)
+        .toUpperCase();
+}
+
+function escapeHtml(value) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.textContent =
+        value ?? "";
+
+    return div.innerHTML;
 }
 
 
-// ------------------------------------------------------------
-// Users
-// ------------------------------------------------------------
+// ============================================================
+// AVATAR DOM
+// ============================================================
+
+function createAvatarElement(
+    user,
+    className = "user-avatar"
+) {
+
+    const wrapper =
+        document.createElement(
+            "div"
+        );
+
+    wrapper.className =
+        `${className} avatar-wrap`;
+
+    wrapper.style.position =
+        "relative";
+
+    wrapper.style.overflow =
+        "hidden";
+
+    const fallback =
+        document.createElement(
+            "span"
+        );
+
+    fallback.className =
+        "avatar-fallback";
+
+    fallback.textContent =
+        getInitial(
+            user?.display_name
+        );
+
+    fallback.style.cssText = `
+        width:100%;
+        height:100%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    `;
+
+    wrapper.appendChild(
+        fallback
+    );
+
+    if (
+        user?.avatar_url
+    ) {
+
+        const img =
+            document.createElement(
+                "img"
+            );
+
+        img.alt =
+            "";
+
+        img.loading =
+            "lazy";
+
+        img.style.cssText = `
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            display:none;
+            position:absolute;
+            inset:0;
+        `;
+
+        wrapper.appendChild(
+            img
+        );
+
+        resolveAvatarUrl(
+            user.avatar_url
+        )
+            .then(
+                url => {
+
+                    if (!url) {
+                        return;
+                    }
+
+                    img.src =
+                        url;
+
+                    img.onload =
+                        () => {
+
+                            img.style.display =
+                                "block";
+
+                            fallback.style.display =
+                                "none";
+                        };
+
+                    img.onerror =
+                        () => {
+
+                            img.style.display =
+                                "none";
+
+                            fallback.style.display =
+                                "flex";
+                        };
+                }
+            )
+            .catch(
+                error => {
+
+                    console.warn(
+                        "AVATAR DISPLAY ERROR:",
+                        error
+                    );
+                }
+            );
+    }
+
+    return wrapper;
+}
+
+
+// ============================================================
+// USERS
+// ============================================================
 
 async function loadUsers() {
 
@@ -1709,12 +1982,11 @@ async function loadUsers() {
         return;
     }
 
-    userList.innerHTML =
-        `
+    userList.innerHTML = `
         <div class="sidebar-empty">
             Loading users...
         </div>
-        `;
+    `;
 
     const {
         data,
@@ -1743,12 +2015,11 @@ async function loadUsers() {
             error
         );
 
-        userList.innerHTML =
-            `
+        userList.innerHTML = `
             <div class="sidebar-empty">
                 Failed to load users.
             </div>
-            `;
+        `;
 
         return;
     }
@@ -1761,162 +2032,22 @@ async function loadUsers() {
     );
 }
 
-function getInitial(name) {
-
-    if (!name) {
-        return "?";
-    }
-
-    return name
-        .trim()
-        .charAt(0)
-        .toUpperCase();
-}
-
-function escapeHtml(value) {
-
-    const div =
-        document.createElement(
-            "div"
-        );
-
-    div.textContent =
-        value ?? "";
-
-    return div.innerHTML;
-}
-
-function getAvatarMarkup(
-    user,
-    className = "user-avatar"
-) {
-
-    const initial =
-        escapeHtml(
-            getInitial(
-                user?.display_name
-            )
-        );
-
-    if (!user?.avatar_url) {
-
-        return `
-            <div class="${className}">
-                ${initial}
-            </div>
-        `;
-    }
-
-    return `
-        <div class="${className} avatar-wrap">
-
-            <img
-                data-avatar-url="${escapeHtml(
-                    user.avatar_url
-                )}"
-                alt=""
-                loading="lazy"
-            >
-
-            <span>
-                ${initial}
-            </span>
-
-        </div>
-    `;
-}
-
-function hydrateAvatarImages(root) {
-
-    if (!root) {
-        return;
-    }
-
-    root
-        .querySelectorAll(
-            "img[data-avatar-url]"
-        )
-        .forEach(
-            img => {
-
-                resolveAvatarUrl(
-                    img.dataset.avatarUrl
-                )
-                    .then(
-                        url => {
-
-                            if (!url) {
-                                return;
-                            }
-
-                            img.src = url;
-
-                            img.onload =
-                                () => {
-
-                                    img.style.display =
-                                        "block";
-
-                                    if (
-                                        img.nextElementSibling
-                                    ) {
-
-                                        img.nextElementSibling.style.display =
-                                            "none";
-                                    }
-                                };
-
-                            img.onerror =
-                                () => {
-
-                                    img.style.display =
-                                        "none";
-
-                                    if (
-                                        img.nextElementSibling
-                                    ) {
-
-                                        img.nextElementSibling.style.display =
-                                            "flex";
-                                    }
-                                };
-                        }
-                    )
-                    .catch(
-                        () => {
-
-                            img.style.display =
-                                "none";
-
-                            if (
-                                img.nextElementSibling
-                            ) {
-
-                                img.nextElementSibling.style.display =
-                                    "flex";
-                            }
-                        }
-                    );
-            }
-        );
-}
-
 function renderUsers(users) {
 
     if (!userList) {
         return;
     }
 
-    userList.innerHTML = "";
+    userList.innerHTML =
+        "";
 
     if (!users?.length) {
 
-        userList.innerHTML =
-            `
+        userList.innerHTML = `
             <div class="sidebar-empty">
                 No users found.
             </div>
-            `;
+        `;
 
         return;
     }
@@ -1939,26 +2070,42 @@ function renderUsers(users) {
         element.dataset.userId =
             user.id;
 
-        element.innerHTML =
-            `
-            ${getAvatarMarkup(user)}
 
-            <div class="user-info">
+        // Avatar
+        const avatar =
+            createAvatarElement(
+                user,
+                "user-avatar"
+            );
 
-                <div class="user-display-name">
-                    ${escapeHtml(
-                        user.display_name
-                    )}
-                </div>
 
-                <div class="user-username">
-                    @${escapeHtml(
-                        user.username
-                    )}
-                </div>
+        // Info
+        const info =
+            document.createElement(
+                "div"
+            );
 
+        info.className =
+            "user-info";
+
+        info.innerHTML = `
+            <div class="user-display-name">
+                ${escapeHtml(
+                    user.display_name
+                )}
             </div>
-            `;
+
+            <div class="user-username">
+                @${escapeHtml(
+                    user.username
+                )}
+            </div>
+        `;
+
+        element.append(
+            avatar,
+            info
+        );
 
         element.addEventListener(
             "click",
@@ -1973,10 +2120,6 @@ function renderUsers(users) {
         );
 
         userList.appendChild(
-            element
-        );
-
-        hydrateAvatarImages(
             element
         );
     }
@@ -2026,9 +2169,9 @@ userSearch?.addEventListener(
 );
 
 
-// ------------------------------------------------------------
-// Conversations
-// ------------------------------------------------------------
+// ============================================================
+// CONVERSATIONS
+// ============================================================
 
 async function openConversation(user) {
 
@@ -2044,36 +2187,50 @@ async function openConversation(user) {
             "Opening conversation...";
     }
 
+    // --------------------------------------------------------
+    // Conversation header
+    // --------------------------------------------------------
+
     if (conversationUser) {
 
         conversationUser.innerHTML =
-            `
-            ${getAvatarMarkup(
+            "";
+
+        const avatar =
+            createAvatarElement(
                 user,
                 "conversation-avatar"
-            )}
+            );
 
-            <div>
+        const info =
+            document.createElement(
+                "div"
+            );
 
-                <div class="conversation-name">
-                    ${escapeHtml(
-                        user.display_name
-                    )}
-                </div>
-
-                <div class="conversation-username">
-                    @${escapeHtml(
-                        user.username
-                    )}
-                </div>
-
+        info.innerHTML = `
+            <div class="conversation-name">
+                ${escapeHtml(
+                    user.display_name
+                )}
             </div>
-            `;
 
-        hydrateAvatarImages(
-            conversationUser
+            <div class="conversation-username">
+                @${escapeHtml(
+                    user.username
+                )}
+            </div>
+        `;
+
+        conversationUser.append(
+            avatar,
+            info
         );
     }
+
+
+    // --------------------------------------------------------
+    // Get/create conversation
+    // --------------------------------------------------------
 
     const {
         data,
@@ -2101,12 +2258,11 @@ async function openConversation(user) {
 
         if (messages) {
 
-            messages.innerHTML =
-                `
+            messages.innerHTML = `
                 <div class="empty">
                     Failed to open conversation.
                 </div>
-                `;
+            `;
         }
 
         return;
@@ -2141,7 +2297,8 @@ async function openConversation(user) {
         );
 
     if (button) {
-        button.disabled = false;
+        button.disabled =
+            false;
     }
 
     if (status) {
@@ -2149,6 +2306,11 @@ async function openConversation(user) {
             "Connected";
     }
 }
+
+
+// ============================================================
+// LOAD MESSAGES
+// ============================================================
 
 async function loadConversationMessages() {
 
@@ -2161,12 +2323,11 @@ async function loadConversationMessages() {
 
     displayedMessageIds.clear();
 
-    messages.innerHTML =
-        `
+    messages.innerHTML = `
         <div class="empty">
             Loading messages...
         </div>
-        `;
+    `;
 
     const {
         data,
@@ -2206,26 +2367,25 @@ async function loadConversationMessages() {
             error
         );
 
-        messages.innerHTML =
-            `
+        messages.innerHTML = `
             <div class="empty">
                 Failed to load messages.
             </div>
-            `;
+        `;
 
         return;
     }
 
-    messages.innerHTML = "";
+    messages.innerHTML =
+        "";
 
     if (!data?.length) {
 
-        messages.innerHTML =
-            `
+        messages.innerHTML = `
             <div class="empty">
                 No messages yet. Say hello!
             </div>
-            `;
+        `;
 
         return;
     }
@@ -2234,6 +2394,11 @@ async function loadConversationMessages() {
         addMessage
     );
 }
+
+
+// ============================================================
+// ADD MESSAGE
+// ============================================================
 
 function addMessage(message) {
 
@@ -2286,36 +2451,65 @@ function addMessage(message) {
         message.profile ||
         {};
 
-    element.innerHTML =
-        `
-        <div class="message-author">
 
-            ${getAvatarMarkup(
-                profile,
-                "message-avatar"
-            )}
+    // --------------------------------------------------------
+    // Author
+    // --------------------------------------------------------
 
-            <div class="username">
-                ${escapeHtml(
-                    profile.display_name ||
-                    "User"
-                )}
-            </div>
+    const author =
+        document.createElement(
+            "div"
+        );
 
-        </div>
+    author.className =
+        "message-author";
 
-        <div class="content">
-            ${escapeHtml(
-                message.content
-            )}
-        </div>
-        `;
+    const avatar =
+        createAvatarElement(
+            profile,
+            "message-avatar"
+        );
 
-    messages.appendChild(
-        element
+    const username =
+        document.createElement(
+            "div"
+        );
+
+    username.className =
+        "username";
+
+    username.textContent =
+        profile.display_name ||
+        "User";
+
+    author.append(
+        avatar,
+        username
     );
 
-    hydrateAvatarImages(
+
+    // --------------------------------------------------------
+    // Content
+    // --------------------------------------------------------
+
+    const content =
+        document.createElement(
+            "div"
+        );
+
+    content.className =
+        "content";
+
+    content.textContent =
+        message.content;
+
+
+    element.append(
+        author,
+        content
+    );
+
+    messages.appendChild(
         element
     );
 
@@ -2324,9 +2518,9 @@ function addMessage(message) {
 }
 
 
-// ------------------------------------------------------------
-// Messages
-// ------------------------------------------------------------
+// ============================================================
+// SEND MESSAGE
+// ============================================================
 
 async function sendMessage(
     content
@@ -2395,7 +2589,8 @@ messageForm?.addEventListener(
             );
 
         if (button) {
-            button.disabled = true;
+            button.disabled =
+                true;
         }
 
         const success =
@@ -2412,15 +2607,16 @@ messageForm?.addEventListener(
         }
 
         if (button) {
-            button.disabled = false;
+            button.disabled =
+                false;
         }
     }
 );
 
 
-// ------------------------------------------------------------
-// Realtime
-// ------------------------------------------------------------
+// ============================================================
+// REALTIME
+// ============================================================
 
 async function startConversationRealtime() {
 
@@ -2506,13 +2702,14 @@ async function stopRealtime() {
         realtimeChannel
     );
 
-    realtimeChannel = null;
+    realtimeChannel =
+        null;
 }
 
 
-// ------------------------------------------------------------
-// Start chat
-// ------------------------------------------------------------
+// ============================================================
+// START CHAT
+// ============================================================
 
 async function startChat() {
 
@@ -2535,17 +2732,17 @@ async function startChat() {
 
     if (messages) {
 
-        messages.innerHTML =
-            `
+        messages.innerHTML = `
             <div class="empty">
                 Select a user to start a conversation.
             </div>
-            `;
+        `;
     }
 
     if (messageInput) {
 
-        messageInput.disabled = true;
+        messageInput.disabled =
+            true;
 
         messageInput.placeholder =
             "Select a conversation...";
@@ -2557,7 +2754,8 @@ async function startChat() {
         );
 
     if (button) {
-        button.disabled = true;
+        button.disabled =
+            true;
     }
 
     await stopRealtime();
@@ -2569,9 +2767,9 @@ async function startChat() {
 }
 
 
-// ------------------------------------------------------------
-// Logout
-// ------------------------------------------------------------
+// ============================================================
+// LOGOUT
+// ============================================================
 
 logoutButton?.addEventListener(
     "click",
@@ -2596,15 +2794,25 @@ logoutButton?.addEventListener(
             return;
         }
 
-        currentUser = null;
-        currentProfile = null;
-        currentConversationId = null;
-        currentConversationUser = null;
-        allUsers = [];
+        currentUser =
+            null;
+
+        currentProfile =
+            null;
+
+        currentConversationId =
+            null;
+
+        currentConversationUser =
+            null;
+
+        allUsers =
+            [];
 
         displayedMessageIds.clear();
 
-        selectedAvatarFile = null;
+        selectedAvatarFile =
+            null;
 
         for (
             const url of
@@ -2630,9 +2838,9 @@ logoutButton?.addEventListener(
 );
 
 
-// ------------------------------------------------------------
-// Session
-// ------------------------------------------------------------
+// ============================================================
+// SESSION
+// ============================================================
 
 async function checkSession() {
 
@@ -2698,10 +2906,17 @@ client.auth.onAuthStateChange(
 
         if (!session) {
 
-            currentUser = null;
-            currentProfile = null;
-            currentConversationId = null;
-            currentConversationUser = null;
+            currentUser =
+                null;
+
+            currentProfile =
+                null;
+
+            currentConversationId =
+                null;
+
+            currentConversationUser =
+                null;
 
             closeGooglePopup();
 
@@ -2713,9 +2928,9 @@ client.auth.onAuthStateChange(
 );
 
 
-// ------------------------------------------------------------
-// Startup
-// ------------------------------------------------------------
+// ============================================================
+// STARTUP
+// ============================================================
 
 console.log(
     "Starting OpenTalk..."

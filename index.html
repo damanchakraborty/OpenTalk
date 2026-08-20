@@ -21,11 +21,6 @@
 
 <body>
 
-
-<!-- ===================================================== -->
-<!-- GOOGLE AUTH -->
-<!-- ===================================================== -->
-
 <section
     id="auth-screen"
     class="auth-screen"
@@ -39,12 +34,10 @@
             Chat with people.
         </p>
 
-
         <div
             id="auth-error"
             class="auth-error"
         ></div>
-
 
         <button
             id="google-login"
@@ -66,12 +59,6 @@
 
 </section>
 
-
-
-<!-- ===================================================== -->
-<!-- PROFILE SETUP -->
-<!-- ===================================================== -->
-
 <section
     id="profile-screen"
     class="auth-screen hidden"
@@ -85,12 +72,10 @@
             One last thing — set up your ChudChat profile.
         </p>
 
-
         <div
             id="profile-error"
             class="auth-error"
         ></div>
-
 
         <form
             id="profile-form"
@@ -108,7 +93,6 @@
                 required
             >
 
-
             <input
                 id="profile-display-name"
                 type="text"
@@ -117,7 +101,6 @@
                 autocomplete="off"
                 required
             >
-
 
             <button type="submit">
                 Continue
@@ -128,12 +111,6 @@
     </div>
 
 </section>
-
-
-
-<!-- ===================================================== -->
-<!-- CHAT -->
-<!-- ===================================================== -->
 
 <main
     id="chat-screen"
@@ -152,7 +129,6 @@
 
         </div>
 
-
         <div class="user-controls">
 
             <span id="current-user"></span>
@@ -168,13 +144,9 @@
 
     </header>
 
-
-
     <div class="chat-body">
 
-
-        <!-- USER SIDEBAR -->
-
+        
         <aside
             id="user-sidebar"
             class="user-sidebar"
@@ -185,8 +157,7 @@
                 <h2>Users</h2>
 
             </div>
-    <!-- GLOBAL CHAT -->
-
+    
     <button
         id="global-chat-button"
         class="user-item global-chat-item"
@@ -211,7 +182,6 @@
 
     </button>
 
-
             <div class="user-search">
 
                 <input
@@ -222,7 +192,6 @@
                 >
 
             </div>
-
 
             <div
                 id="user-list"
@@ -242,18 +211,15 @@
     class="mobile-sidebar-backdrop"
 ></div>
 
-        <!-- CONVERSATION -->
-
+        
         <section class="conversation">
-
 
 <header
     id="conversation-header"
     class="conversation-header"
 >
 
-    <!-- MOBILE CHAT SELECTOR -->
-
+    
     <button
         id="mobile-chat-selector"
         class="mobile-chat-selector"
@@ -265,7 +231,6 @@
         <span></span>
         <span></span>
     </button>
-
 
     <div
         id="conversation-user"
@@ -280,8 +245,6 @@
 
 </header>
 
-
-
             <section
                 id="messages"
                 class="messages"
@@ -292,8 +255,6 @@
                 </div>
 
             </section>
-
-
 
             <form
                 id="message-form"
@@ -310,7 +271,6 @@
                     required
                 >
 
-
                 <button
                     type="submit"
                     disabled
@@ -320,18 +280,11 @@
 
             </form>
 
-
         </section>
 
     </div>
 
 </main>
-
-
-
-<!-- ===================================================== -->
-<!-- SUPABASE -->
-<!-- ===================================================== -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 

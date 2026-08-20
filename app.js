@@ -1,6 +1,3 @@
-// ============================================================
-// SUPABASE
-// ============================================================
 
 const SUPABASE_URL =
     "https://vkelkgabycpxojybguvj.supabase.co";
@@ -14,27 +11,13 @@ const client =
         SUPABASE_KEY
     );
 
-
-// ============================================================
-// CONFIG
-// ============================================================
-
-// IMPORTANT:
-// Google/Supabase OAuth always returns to auth-callback.html.
-//
-// The callback page handles the OAuth response and then
-// notifies this page that login succeeded.
+// OAuth always redirects back through auth-callback.html
 
 const REDIRECT_URL =
     new URL(
         "auth-callback.html",
         window.location.href
     ).href;
-
-
-// ============================================================
-// STATE
-// ============================================================
 
 let currentUser = null;
 let currentProfile = null;
@@ -54,10 +37,6 @@ let googleAuthTimeout = null;
 
 let initializingUser = false;
 
-
-// ============================================================
-// DOM
-// ============================================================
 const globalChatButton =
     document.getElementById(
         "global-chat-button"
@@ -79,14 +58,12 @@ const chatScreen =
         "chat-screen"
     );
 
-
 // Authentication
 
 const googleLogin =
     document.getElementById(
         "google-login"
     );
-
 
 // Profile
 
@@ -105,7 +82,6 @@ const profileDisplayName =
         "profile-display-name"
     );
 
-
 // Errors
 
 const authError =
@@ -117,7 +93,6 @@ const profileError =
     document.getElementById(
         "profile-error"
     );
-
 
 // Chat
 
@@ -183,9 +158,6 @@ const mobileSidebarBackdrop =
         "mobile-sidebar-backdrop"
     );
     
-// ============================================================
-// MOBILE SIDEBAR
-// ============================================================
 if (globalChatButton) {
 
     globalChatButton.addEventListener(
@@ -201,14 +173,12 @@ if (globalChatButton) {
     );
 }
 
-
 function isMobile() {
 
     return window.matchMedia(
         "(max-width: 700px)"
     ).matches;
 }
-
 
 function openMobileSidebar() {
 
@@ -219,11 +189,9 @@ function openMobileSidebar() {
         return;
     }
 
-
     userSidebar.classList.add(
         "mobile-open"
     );
-
 
     if (mobileSidebarBackdrop) {
 
@@ -231,7 +199,6 @@ function openMobileSidebar() {
             "mobile-visible"
         );
     }
-
 
     if (mobileChatSelector) {
 
@@ -242,18 +209,15 @@ function openMobileSidebar() {
     }
 }
 
-
 function closeMobileSidebar() {
 
     if (!userSidebar) {
         return;
     }
 
-
     userSidebar.classList.remove(
         "mobile-open"
     );
-
 
     if (mobileSidebarBackdrop) {
 
@@ -261,7 +225,6 @@ function closeMobileSidebar() {
             "mobile-visible"
         );
     }
-
 
     if (mobileChatSelector) {
 
@@ -272,13 +235,11 @@ function closeMobileSidebar() {
     }
 }
 
-
 function toggleMobileSidebar() {
 
     if (!isMobile()) {
         return;
     }
-
 
     if (
         userSidebar &&
@@ -295,10 +256,6 @@ function toggleMobileSidebar() {
     }
 }
 
-// ============================================================
-// MOBILE SIDEBAR EVENTS
-// ============================================================
-
 if (mobileChatSelector) {
 
     mobileChatSelector.addEventListener(
@@ -307,7 +264,6 @@ if (mobileChatSelector) {
     );
 }
 
-
 if (mobileSidebarBackdrop) {
 
     mobileSidebarBackdrop.addEventListener(
@@ -315,9 +271,6 @@ if (mobileSidebarBackdrop) {
         closeMobileSidebar
     );
 }
-// ============================================================
-// SCREEN MANAGEMENT
-// ============================================================
 
 function hideAllScreens() {
 
@@ -340,7 +293,6 @@ function hideAllScreens() {
     }
 }
 
-
 function showLoginScreen() {
 
     hideAllScreens();
@@ -354,7 +306,6 @@ function showLoginScreen() {
     resetGoogleButton();
 }
 
-
 function showProfileScreen() {
 
     hideAllScreens();
@@ -366,7 +317,6 @@ function showProfileScreen() {
     }
 }
 
-
 function showChatScreen() {
 
     hideAllScreens();
@@ -377,11 +327,6 @@ function showChatScreen() {
         );
     }
 }
-
-
-// ============================================================
-// ERROR HANDLING
-// ============================================================
 
 function showError(
     element,
@@ -399,7 +344,6 @@ function showError(
         "block";
 }
 
-
 function clearError(
     element
 ) {
@@ -414,11 +358,6 @@ function clearError(
     element.style.display =
         "none";
 }
-
-
-// ============================================================
-// GOOGLE BUTTON
-// ============================================================
 
 function resetGoogleButton() {
 
@@ -440,7 +379,6 @@ function resetGoogleButton() {
     `;
 }
 
-
 function setGoogleButtonLoading() {
 
     if (!googleLogin) {
@@ -461,11 +399,6 @@ function setGoogleButtonLoading() {
     `;
 }
 
-
-// ============================================================
-// GOOGLE AUTH POPUP
-// ============================================================
-
 async function startGoogleLogin() {
 
     if (!googleLogin) {
@@ -475,7 +408,6 @@ async function startGoogleLogin() {
     clearError(
         authError
     );
-
 
     // Already opening
 
@@ -489,18 +421,11 @@ async function startGoogleLogin() {
         return;
     }
 
-
     setGoogleButtonLoading();
-
 
     console.log(
         "Starting Google popup login..."
     );
-
-
-    // --------------------------------------------------------
-    // OPEN BLANK POPUP IMMEDIATELY
-    // --------------------------------------------------------
 
     const width = 500;
     const height = 650;
@@ -519,7 +444,6 @@ async function startGoogleLogin() {
             height
         ) / 2;
 
-
     googleAuthPopup =
         window.open(
             "about:blank",
@@ -534,7 +458,6 @@ async function startGoogleLogin() {
                 scrollbars=yes
             `
         );
-
 
     if (!googleAuthPopup) {
 
@@ -551,11 +474,6 @@ async function startGoogleLogin() {
 
         return;
     }
-
-
-    // --------------------------------------------------------
-    // GET GOOGLE OAUTH URL
-    // --------------------------------------------------------
 
     const {
         data,
@@ -576,7 +494,6 @@ async function startGoogleLogin() {
             }
         });
 
-
     if (error) {
 
         console.error(
@@ -595,7 +512,6 @@ async function startGoogleLogin() {
 
         return;
     }
-
 
     if (
         !data ||
@@ -617,11 +533,6 @@ async function startGoogleLogin() {
 
         return;
     }
-
-
-    // --------------------------------------------------------
-    // NAVIGATE POPUP TO GOOGLE
-    // --------------------------------------------------------
 
     try {
 
@@ -649,18 +560,8 @@ async function startGoogleLogin() {
         return;
     }
 
-
-    // --------------------------------------------------------
-    // WATCH POPUP
-    // --------------------------------------------------------
-
     startGooglePopupWatcher();
 }
-
-
-// ============================================================
-// POPUP WATCHER
-// ============================================================
 
 function startGooglePopupWatcher() {
 
@@ -668,14 +569,9 @@ function startGooglePopupWatcher() {
         googleAuthTimeout
     );
 
-
     googleAuthTimeout =
         setInterval(
             async () => {
-
-                // ------------------------------------------------
-                // POPUP CLOSED
-                // ------------------------------------------------
 
                 if (
                     googleAuthPopup &&
@@ -696,11 +592,9 @@ function startGooglePopupWatcher() {
                     googleAuthPopup =
                         null;
 
-
                     if (currentUser) {
                         return;
                     }
-
 
                     showError(
                         authError,
@@ -712,17 +606,11 @@ function startGooglePopupWatcher() {
                     return;
                 }
 
-
-                // ------------------------------------------------
-                // CHECK SESSION
-                // ------------------------------------------------
-
                 const {
                     data,
                     error
                 } =
                     await client.auth.getSession();
-
 
                 if (error) {
 
@@ -733,7 +621,6 @@ function startGooglePopupWatcher() {
 
                     return;
                 }
-
 
                 if (
                     data &&
@@ -765,11 +652,6 @@ function startGooglePopupWatcher() {
         );
 }
 
-
-// ============================================================
-// CLOSE GOOGLE POPUP
-// ============================================================
-
 function closeGooglePopup() {
 
     if (googleAuthTimeout) {
@@ -781,7 +663,6 @@ function closeGooglePopup() {
         googleAuthTimeout =
             null;
     }
-
 
     if (
         googleAuthPopup &&
@@ -801,15 +682,9 @@ function closeGooglePopup() {
         }
     }
 
-
     googleAuthPopup =
         null;
 }
-
-
-// ============================================================
-// GOOGLE LOGIN BUTTON
-// ============================================================
 
 if (googleLogin) {
 
@@ -819,27 +694,11 @@ if (googleLogin) {
     );
 }
 
-
-// ============================================================
-// MAIN WINDOW ← POPUP COMMUNICATION
-// ============================================================
-//
-// auth-callback.html sends one of:
-//
-// CHUDCHAT_AUTH_SUCCESS
-// CHUDCHAT_AUTH_ERROR
-//
-// The main index.html receives that message and initializes
-// the actual chat UI.
-// ============================================================
+// listens for the login result posted by auth-callback.html
 
 window.addEventListener(
     "message",
     async (event) => {
-
-        // --------------------------------------------------------
-        // SECURITY
-        // --------------------------------------------------------
 
         if (
             event.origin !==
@@ -848,7 +707,6 @@ window.addEventListener(
             return;
         }
 
-
         if (
             !event.data ||
             typeof event.data.type !==
@@ -856,11 +714,6 @@ window.addEventListener(
         ) {
             return;
         }
-
-
-        // --------------------------------------------------------
-        // AUTH SUCCESS
-        // --------------------------------------------------------
 
         if (
             event.data.type ===
@@ -871,16 +724,13 @@ window.addEventListener(
                 "Received successful Google login from popup."
             );
 
-
             closeGooglePopup();
-
 
             const {
                 data,
                 error
             } =
                 await client.auth.getSession();
-
 
             if (error) {
 
@@ -898,7 +748,6 @@ window.addEventListener(
 
                 return;
             }
-
 
             if (
                 !data ||
@@ -919,25 +768,17 @@ window.addEventListener(
                 return;
             }
 
-
             currentUser =
                 data.session.user;
-
 
             clearError(
                 authError
             );
 
-
             await initializeUser();
 
             return;
         }
-
-
-        // --------------------------------------------------------
-        // AUTH ERROR
-        // --------------------------------------------------------
 
         if (
             event.data.type ===
@@ -949,16 +790,13 @@ window.addEventListener(
                 event.data.message
             );
 
-
             closeGooglePopup();
-
 
             showError(
                 authError,
                 event.data.message ||
                 "Google sign-in failed."
             );
-
 
             resetGoogleButton();
 
@@ -967,23 +805,16 @@ window.addEventListener(
     }
 );
 
-
-// ============================================================
-// LOAD PROFILE
-// ============================================================
-
 async function loadProfile() {
 
     if (!currentUser) {
         return null;
     }
 
-
     console.log(
         "Loading profile for:",
         currentUser.id
     );
-
 
     const {
         data,
@@ -1000,7 +831,6 @@ async function loadProfile() {
             )
             .maybeSingle();
 
-
     if (error) {
 
         console.error(
@@ -1011,14 +841,8 @@ async function loadProfile() {
         return null;
     }
 
-
     return data;
 }
-
-
-// ============================================================
-// INITIALIZE USER
-// ============================================================
 
 async function initializeUser() {
 
@@ -1029,10 +853,8 @@ async function initializeUser() {
         return;
     }
 
-
     initializingUser =
         true;
-
 
     try {
 
@@ -1041,14 +863,8 @@ async function initializeUser() {
             currentUser
         );
 
-
         currentProfile =
             await loadProfile();
-
-
-        // ----------------------------------------------------
-        // NEW USER
-        // ----------------------------------------------------
 
         if (!currentProfile) {
 
@@ -1056,49 +872,36 @@ async function initializeUser() {
                 "No profile found."
             );
 
-
             showProfileScreen();
-
 
             clearError(
                 profileError
             );
 
-
             const metadata =
                 currentUser.user_metadata ||
                 {};
-
 
             const googleName =
                 metadata.full_name ||
                 metadata.name ||
                 "";
 
-
             const googleUsername =
                 createUsernameSuggestion(
                     metadata
                 );
 
-
             profileUsername.value =
                 googleUsername;
 
-
             profileDisplayName.value =
                 googleName;
-
 
             profileUsername.focus();
 
             return;
         }
-
-
-        // ----------------------------------------------------
-        // EXISTING INCOMPLETE PROFILE
-        // ----------------------------------------------------
 
         if (
             !currentProfile.username ||
@@ -1109,16 +912,13 @@ async function initializeUser() {
 
             showProfileScreen();
 
-
             clearError(
                 profileError
             );
 
-
             profileUsername.value =
                 currentProfile.username ||
                 "";
-
 
             profileDisplayName.value =
                 currentProfile.display_name ===
@@ -1130,16 +930,10 @@ async function initializeUser() {
                         ""
                     );
 
-
             profileUsername.focus();
 
             return;
         }
-
-
-        // ----------------------------------------------------
-        // EXISTING USER
-        // ----------------------------------------------------
 
         await startChat();
 
@@ -1149,11 +943,6 @@ async function initializeUser() {
             false;
     }
 }
-
-
-// ============================================================
-// CREATE USERNAME SUGGESTION
-// ============================================================
 
 function createUsernameSuggestion(
     metadata
@@ -1166,7 +955,6 @@ function createUsernameSuggestion(
         metadata.name ||
         "";
 
-
     value =
         value
             .toLowerCase()
@@ -1175,16 +963,13 @@ function createUsernameSuggestion(
                 ""
             );
 
-
     if (!value) {
         value = "user";
     }
 
-
     if (value.length < 3) {
         value += "user";
     }
-
 
     value =
         value.substring(
@@ -1192,14 +977,8 @@ function createUsernameSuggestion(
             24
         );
 
-
     return value;
 }
-
-
-// ============================================================
-// PROFILE SETUP
-// ============================================================
 
 if (profileForm) {
 
@@ -1221,11 +1000,6 @@ if (profileForm) {
                 return;
             }
 
-
-            // ------------------------------------------------
-            // GET VALUES
-            // ------------------------------------------------
-
             const username =
                 profileUsername.value
                     .trim()
@@ -1234,11 +1008,6 @@ if (profileForm) {
             const displayName =
                 profileDisplayName.value
                     .trim();
-
-
-            // ------------------------------------------------
-            // VALIDATE USERNAME
-            // ------------------------------------------------
 
             if (
                 !/^[a-z0-9_]{3,24}$/.test(
@@ -1254,11 +1023,6 @@ if (profileForm) {
                 return;
             }
 
-
-            // ------------------------------------------------
-            // VALIDATE DISPLAY NAME
-            // ------------------------------------------------
-
             if (!displayName) {
 
                 showError(
@@ -1269,20 +1033,13 @@ if (profileForm) {
                 return;
             }
 
-
             const button =
                 profileForm.querySelector(
                     "button"
                 );
 
-
             button.disabled = true;
             button.textContent = "Checking...";
-
-
-            // ------------------------------------------------
-            // CHECK IF USERNAME EXISTS
-            // ------------------------------------------------
 
             const {
                 data: existingUsername,
@@ -1293,7 +1050,6 @@ if (profileForm) {
                     .select("id")
                     .eq("username", username)
                     .maybeSingle();
-
 
             if (usernameCheckError) {
 
@@ -1312,11 +1068,6 @@ if (profileForm) {
 
                 return;
             }
-
-
-            // ------------------------------------------------
-            // USERNAME ALREADY EXISTS
-            // ------------------------------------------------
 
             if (
     existingUsername &&
@@ -1337,21 +1088,12 @@ if (profileForm) {
                 return;
             }
 
-
-            // ------------------------------------------------
-// CREATE OR UPDATE PROFILE
-// ------------------------------------------------
-
 button.textContent = "Saving...";
 
 let data;
 let error;
 
 if (currentProfile) {
-
-    // --------------------------------------------
-    // EXISTING PROFILE
-    // --------------------------------------------
 
     const result =
         await client
@@ -1372,10 +1114,6 @@ if (currentProfile) {
 
 } else {
 
-    // --------------------------------------------
-    // BRAND NEW PROFILE
-    // --------------------------------------------
-
     const result =
         await client
             .from("profiles")
@@ -1391,10 +1129,6 @@ if (currentProfile) {
     error = result.error;
 }
 
-            // ------------------------------------------------
-            // HANDLE INSERT ERROR
-            // ------------------------------------------------
-
             if (error) {
 
                 console.error(
@@ -1402,10 +1136,8 @@ if (currentProfile) {
                     error
                 );
 
-
                 button.disabled = false;
                 button.textContent = "Continue";
-
 
                 // Username collision
                 if (
@@ -1431,7 +1163,6 @@ if (currentProfile) {
                     return;
                 }
 
-
                 // Profile already exists
                 if (
                     error.code === "23505"
@@ -1450,7 +1181,6 @@ if (currentProfile) {
                     return;
                 }
 
-
                 showError(
                     profileError,
                     error.message ||
@@ -1460,34 +1190,21 @@ if (currentProfile) {
                 return;
             }
 
-
-            // ------------------------------------------------
-            // SUCCESS
-            // ------------------------------------------------
-
             currentProfile =
                 data;
-
 
             console.log(
                 "Profile created:",
                 currentProfile
             );
 
-
             button.disabled = false;
             button.textContent = "Continue";
-
 
             await startChat();
         }
     );
 }
-
-
-// ============================================================
-// LOAD USERS
-// ============================================================
 
 async function loadUsers() {
 
@@ -1498,13 +1215,11 @@ async function loadUsers() {
         return;
     }
 
-
     userList.innerHTML = `
         <div class="sidebar-empty">
             Loading users...
         </div>
     `;
-
 
     const {
         data,
@@ -1526,14 +1241,12 @@ async function loadUsers() {
                 }
             );
 
-
     if (error) {
 
         console.error(
             "USER LOAD ERROR:",
             error
         );
-
 
         userList.innerHTML = `
             <div class="sidebar-empty">
@@ -1544,20 +1257,13 @@ async function loadUsers() {
         return;
     }
 
-
     allUsers =
         data || [];
-
 
     renderUsers(
         allUsers
     );
 }
-
-
-// ============================================================
-// RENDER USERS
-// ============================================================
 
 function renderUsers(
     users
@@ -1567,10 +1273,8 @@ function renderUsers(
         return;
     }
 
-
     userList.innerHTML =
         "";
-
 
     if (
         !users ||
@@ -1586,7 +1290,6 @@ function renderUsers(
         return;
     }
 
-
     for (
         const user of users
     ) {
@@ -1596,7 +1299,6 @@ function renderUsers(
                 "button"
             );
 
-
         element.className =
             "user-item";
 
@@ -1605,7 +1307,6 @@ function renderUsers(
 
         element.dataset.userId =
             user.id;
-
 
         element.innerHTML = `
             <div class="user-avatar">
@@ -1633,7 +1334,6 @@ function renderUsers(
             </div>
         `;
 
-
         element.addEventListener(
     "click",
     () => {
@@ -1646,17 +1346,11 @@ function renderUsers(
     }
 );
 
-
         userList.appendChild(
             element
         );
     }
 }
-
-
-// ============================================================
-// USER SEARCH
-// ============================================================
 
 if (userSearch) {
 
@@ -1669,7 +1363,6 @@ if (userSearch) {
                     .trim()
                     .toLowerCase();
 
-
             if (!query) {
 
                 renderUsers(
@@ -1678,7 +1371,6 @@ if (userSearch) {
 
                 return;
             }
-
 
             const filtered =
                 allUsers.filter(
@@ -1694,7 +1386,6 @@ if (userSearch) {
                                 ?.toLowerCase() ||
                             "";
 
-
                         return (
                             username.includes(
                                 query
@@ -1706,18 +1397,12 @@ if (userSearch) {
                     }
                 );
 
-
             renderUsers(
                 filtered
             );
         }
     );
 }
-
-
-// ============================================================
-// GET INITIAL
-// ============================================================
 
 function getInitial(
     name
@@ -1727,17 +1412,11 @@ function getInitial(
         return "?";
     }
 
-
     return name
         .trim()
         .charAt(0)
         .toUpperCase();
 }
-
-
-// ============================================================
-// ESCAPE HTML
-// ============================================================
 
 function escapeHtml(
     value
@@ -1748,18 +1427,11 @@ function escapeHtml(
             "div"
         );
 
-
     div.textContent =
         value ?? "";
 
-
     return div.innerHTML;
 }
-
-
-// ============================================================
-// OPEN CONVERSATION
-// ============================================================
 
 async function openConversation(
     user
@@ -1772,16 +1444,13 @@ async function openConversation(
         return;
     }
 
-
     console.log(
         "Opening conversation with:",
         user
     );
 
-
     status.textContent =
         "Opening conversation...";
-
 
     if (conversationUser) {
 
@@ -1812,7 +1481,6 @@ async function openConversation(
         `;
     }
 
-
     const {
         data,
         error
@@ -1825,7 +1493,6 @@ async function openConversation(
             }
         );
 
-
     if (error) {
 
         console.error(
@@ -1833,10 +1500,8 @@ async function openConversation(
             error
         );
 
-
         status.textContent =
             "Conversation error";
-
 
         messages.innerHTML = `
             <div class="empty">
@@ -1847,13 +1512,11 @@ async function openConversation(
         return;
     }
 
-
     currentConversationId =
         data;
 
     currentConversationUser =
         user;
-
 
     await stopRealtime();
 
@@ -1861,10 +1524,8 @@ async function openConversation(
 
     await startConversationRealtime();
 
-
     messageInput.disabled =
         false;
-
 
     messageForm
         .querySelector(
@@ -1873,22 +1534,14 @@ async function openConversation(
         .disabled =
         false;
 
-
     messageInput.placeholder =
         `Message ${user.display_name}...`;
 
-
     messageInput.focus();
-
 
     status.textContent =
         "Connected";
 }
-
-
-// ============================================================
-// LOAD CONVERSATION MESSAGES
-// ============================================================
 
 async function loadConversationMessages() {
 
@@ -1896,16 +1549,13 @@ async function loadConversationMessages() {
         return;
     }
 
-
     displayedMessageIds.clear();
-
 
     messages.innerHTML = `
         <div class="empty">
             Loading messages...
         </div>
     `;
-
 
     const {
         data,
@@ -1936,14 +1586,12 @@ async function loadConversationMessages() {
                 }
             );
 
-
     if (error) {
 
         console.error(
             "MESSAGE LOAD ERROR:",
             error
         );
-
 
         messages.innerHTML = `
             <div class="empty">
@@ -1954,10 +1602,8 @@ async function loadConversationMessages() {
         return;
     }
 
-
     messages.innerHTML =
         "";
-
 
     if (
         !data ||
@@ -1973,7 +1619,6 @@ async function loadConversationMessages() {
         return;
     }
 
-
     for (
         const message of data
     ) {
@@ -1983,11 +1628,6 @@ async function loadConversationMessages() {
         );
     }
 }
-
-
-// ============================================================
-// ADD MESSAGE
-// ============================================================
 
 function addMessage(
     message
@@ -2002,7 +1642,6 @@ function addMessage(
         return;
     }
 
-
     if (message.id) {
 
         displayedMessageIds.add(
@@ -2010,27 +1649,22 @@ function addMessage(
         );
     }
 
-
     const empty =
         messages.querySelector(
             ".empty"
         );
 
-
     if (empty) {
         empty.remove();
     }
-
 
     const element =
         document.createElement(
             "div"
         );
 
-
     element.className =
         "message";
-
 
     if (
         currentUser &&
@@ -2043,35 +1677,28 @@ function addMessage(
         );
     }
 
-
     const username =
         document.createElement(
             "div"
         );
 
-
     username.className =
         "username";
-
 
     username.textContent =
         message.profile?.display_name ||
         "User";
-
 
     const content =
         document.createElement(
             "div"
         );
 
-
     content.className =
         "content";
 
-
     content.textContent =
         message.content;
-
 
     element.appendChild(
         username
@@ -2081,20 +1708,13 @@ function addMessage(
         content
     );
 
-
     messages.appendChild(
         element
     );
 
-
     messages.scrollTop =
         messages.scrollHeight;
 }
-
-
-// ============================================================
-// SEND MESSAGE
-// ============================================================
 
 async function sendMessage(
     content
@@ -2106,7 +1726,6 @@ async function sendMessage(
     ) {
         return false;
     }
-
 
     const {
         error
@@ -2123,7 +1742,6 @@ async function sendMessage(
                 content
             });
 
-
     if (error) {
 
         console.error(
@@ -2131,22 +1749,14 @@ async function sendMessage(
             error
         );
 
-
         status.textContent =
             "Send failed";
-
 
         return false;
     }
 
-
     return true;
 }
-
-
-// ============================================================
-// MESSAGE FORM
-// ============================================================
 
 if (messageForm) {
 
@@ -2156,11 +1766,9 @@ if (messageForm) {
 
             event.preventDefault();
 
-
             const content =
                 messageInput.value
                     .trim();
-
 
             if (
                 !content ||
@@ -2169,22 +1777,18 @@ if (messageForm) {
                 return;
             }
 
-
             const button =
                 messageForm.querySelector(
                     "button"
                 );
 
-
             button.disabled =
                 true;
-
 
             const success =
                 await sendMessage(
                     content
                 );
-
 
             if (success) {
 
@@ -2194,31 +1798,22 @@ if (messageForm) {
                 messageInput.focus();
             }
 
-
             button.disabled =
                 false;
         }
     );
 }
 
-
-// ============================================================
-// CONVERSATION REALTIME
-// ============================================================
-
 async function startConversationRealtime() {
 
     await stopRealtime();
-
 
     if (!currentConversationId) {
         return;
     }
 
-
     const channelName =
         `conversation:${currentConversationId}`;
-
 
     realtimeChannel =
         client
@@ -2249,7 +1844,6 @@ async function startConversationRealtime() {
                         payload
                     );
 
-
                     if (
                         payload.new
                             .conversation_id !==
@@ -2257,7 +1851,6 @@ async function startConversationRealtime() {
                     ) {
                         return;
                     }
-
 
                     const {
                         data: profile
@@ -2274,7 +1867,6 @@ async function startConversationRealtime() {
                                 payload.new.user_id
                             )
                             .single();
-
 
                     addMessage({
 
@@ -2294,7 +1886,6 @@ async function startConversationRealtime() {
                         subscriptionStatus
                     );
 
-
                     if (
                         subscriptionStatus ===
                         "SUBSCRIBED"
@@ -2312,31 +1903,19 @@ async function startConversationRealtime() {
             );
 }
 
-
-// ============================================================
-// STOP REALTIME
-// ============================================================
-
 async function stopRealtime() {
 
     if (!realtimeChannel) {
         return;
     }
 
-
     await client.removeChannel(
         realtimeChannel
     );
 
-
     realtimeChannel =
         null;
 }
-
-
-// ============================================================
-// START CHAT
-// ============================================================
 
 async function startChat() {
 
@@ -2347,16 +1926,12 @@ async function startChat() {
         return;
     }
 
-
     currentUserElement.textContent =
         currentProfile.display_name;
 
-
     showChatScreen();
 
-
     await loadUsers();
-
 
     messages.innerHTML = `
         <div class="empty">
@@ -2364,10 +1939,8 @@ async function startChat() {
         </div>
     `;
 
-
     messageInput.disabled =
         true;
-
 
     messageForm
         .querySelector(
@@ -2376,18 +1949,11 @@ async function startChat() {
         .disabled =
         true;
 
-
     await stopRealtime();
-
 
     status.textContent =
         "Ready";
 }
-
-
-// ============================================================
-// LOGOUT
-// ============================================================
 
 if (logoutButton) {
 
@@ -2399,12 +1965,10 @@ if (logoutButton) {
 
             closeGooglePopup();
 
-
             const {
                 error
             } =
                 await client.auth.signOut();
-
 
             if (error) {
 
@@ -2415,7 +1979,6 @@ if (logoutButton) {
 
                 return;
             }
-
 
             currentUser =
                 null;
@@ -2434,7 +1997,6 @@ if (logoutButton) {
 
             displayedMessageIds.clear();
 
-
             if (messages) {
 
                 messages.innerHTML = `
@@ -2444,16 +2006,10 @@ if (logoutButton) {
                 `;
             }
 
-
             showLoginScreen();
         }
     );
 }
-
-
-// ============================================================
-// SESSION
-// ============================================================
 
 async function checkSession() {
 
@@ -2461,13 +2017,11 @@ async function checkSession() {
         "Checking session..."
     );
 
-
     const {
         data,
         error
     } =
         await client.auth.getSession();
-
 
     if (error) {
 
@@ -2481,7 +2035,6 @@ async function checkSession() {
         return;
     }
 
-
     if (
         data &&
         data.session
@@ -2491,10 +2044,8 @@ async function checkSession() {
             "Existing session found."
         );
 
-
         currentUser =
             data.session.user;
-
 
         await initializeUser();
 
@@ -2508,11 +2059,6 @@ async function checkSession() {
     }
 }
 
-
-// ============================================================
-// AUTH STATE
-// ============================================================
-
 client.auth.onAuthStateChange(
     (
         event,
@@ -2524,11 +2070,6 @@ client.auth.onAuthStateChange(
             event
         );
 
-
-        // ----------------------------------------------------
-        // NORMAL WINDOW LOGIN
-        // ----------------------------------------------------
-
         if (
             session &&
             !currentUser
@@ -2537,9 +2078,7 @@ client.auth.onAuthStateChange(
             currentUser =
                 session.user;
 
-
             closeGooglePopup();
-
 
             setTimeout(
                 () => {
@@ -2550,11 +2089,6 @@ client.auth.onAuthStateChange(
                 0
             );
         }
-
-
-        // ----------------------------------------------------
-        // LOGOUT
-        // ----------------------------------------------------
 
         if (!session) {
 
@@ -2570,22 +2104,14 @@ client.auth.onAuthStateChange(
             currentConversationUser =
                 null;
 
-
             closeGooglePopup();
 
-
             stopRealtime();
-
 
             showLoginScreen();
         }
     }
 );
-
-
-// ============================================================
-// START APPLICATION
-// ============================================================
 
 console.log(
     "Starting ChudChat..."

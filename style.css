@@ -1,7 +1,3 @@
-/* ============================================================
-   THEME
-   ============================================================ */
-
 :root {
     --bg: #07050d;
     --panel: #100b19;
@@ -19,22 +15,15 @@
     --purple: #c832a0;
 }
 
-
-/* ============================================================
-   RESET
-   ============================================================ */
-
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-
 html {
     scroll-behavior: smooth;
 }
-
 
 body {
     min-height: 100vh;
@@ -59,11 +48,6 @@ body {
 
     overflow: hidden;
 }
-
-
-/* ============================================================
-   AMBIENT BACKGROUND
-   ============================================================ */
 
 body::before {
     content: "";
@@ -96,7 +80,6 @@ body::before {
     z-index: -2;
 }
 
-
 body::after {
     content: "";
 
@@ -123,25 +106,14 @@ body::after {
     z-index: -1;
 }
 
-
-/* ============================================================
-   GENERAL
-   ============================================================ */
-
 .hidden {
     display: none !important;
 }
-
 
 button,
 input {
     font-family: inherit;
 }
-
-
-/* ============================================================
-   AUTH
-   ============================================================ */
 
 .auth-screen {
     width: 100%;
@@ -153,7 +125,6 @@ input {
 
     padding: 20px;
 }
-
 
 .auth-box {
     width: min(400px, 92vw);
@@ -170,7 +141,6 @@ input {
         0 0 50px rgba(255, 79, 179, 0.03);
 }
 
-
 .auth-box h1 {
     font-family:
         ui-monospace,
@@ -185,7 +155,6 @@ input {
     text-align: center;
 }
 
-
 .auth-subtitle {
     margin-top: 6px;
     margin-bottom: 25px;
@@ -197,14 +166,12 @@ input {
     text-align: center;
 }
 
-
 .auth-form {
     display: flex;
     flex-direction: column;
 
     gap: 10px;
 }
-
 
 .auth-form input {
     width: 100%;
@@ -227,11 +194,9 @@ input {
         box-shadow 0.2s;
 }
 
-
 .auth-form input::placeholder {
     color: #62566a;
 }
-
 
 .auth-form input:focus {
     border-color: var(--accent);
@@ -240,7 +205,6 @@ input {
         0 0 0 1px var(--accent),
         0 0 18px rgba(255, 79, 179, 0.08);
 }
-
 
 .auth-form button {
     height: 44px;
@@ -265,7 +229,6 @@ input {
         box-shadow 0.2s;
 }
 
-
 .auth-form button:hover {
     background: var(--pink);
 
@@ -274,7 +237,6 @@ input {
     box-shadow:
         0 8px 25px rgba(255, 79, 179, 0.18);
 }
-
 
 .auth-switch {
     margin-top: 20px;
@@ -285,7 +247,6 @@ input {
 
     text-align: center;
 }
-
 
 .auth-switch button {
     margin-left: 5px;
@@ -301,11 +262,9 @@ input {
     transition: color 0.2s;
 }
 
-
 .auth-switch button:hover {
     color: var(--pink);
 }
-
 
 .auth-error {
     display: none;
@@ -325,11 +284,6 @@ input {
     font-size: 13px;
 }
 
-
-/* ============================================================
-   PROFILE PREVIEW
-   ============================================================ */
-
 .profile-preview {
     margin-bottom: 20px;
 
@@ -344,11 +298,6 @@ input {
 
     font-size: 13px;
 }
-
-
-/* ============================================================
-   CHAT WINDOW
-   ============================================================ */
 
 .chat {
     width: min(1100px, 95vw);
@@ -369,11 +318,6 @@ input {
         0 0 80px rgba(255, 79, 179, 0.035);
 }
 
-
-/* ============================================================
-   CHAT HEADER
-   ============================================================ */
-
 .chat-header {
     min-height: 72px;
 
@@ -385,7 +329,6 @@ input {
     justify-content: space-between;
     align-items: center;
 }
-
 
 .chat-header h1 {
     font-family:
@@ -399,7 +342,6 @@ input {
 
     letter-spacing: -0.04em;
 }
-
 
 .chat-header span {
     display: block;
@@ -420,14 +362,12 @@ input {
     letter-spacing: 0.08em;
 }
 
-
 .user-controls {
     display: flex;
     align-items: center;
 
     gap: 10px;
 }
-
 
 #current-user {
     max-width: 220px;
@@ -448,7 +388,6 @@ input {
 
     font-size: 11px;
 }
-
 
 #logout-button {
     padding: 7px 12px;
@@ -476,7 +415,6 @@ input {
         background 0.2s;
 }
 
-
 #logout-button:hover {
     background: var(--panel2);
 
@@ -485,11 +423,6 @@ input {
     color: var(--text);
 }
 
-
-/* ============================================================
-   CHAT BODY
-   ============================================================ */
-
 .chat-body {
     display: flex;
 
@@ -497,11 +430,6 @@ input {
 
     min-height: 0;
 }
-
-
-/* ============================================================
-   USER SIDEBAR
-   ============================================================ */
 
 .user-sidebar {
     width: 280px;
@@ -515,11 +443,9 @@ input {
     background: var(--panel);
 }
 
-
 .sidebar-header {
     padding: 18px 20px 10px;
 }
-
 
 .sidebar-header h2 {
     font-family:
@@ -535,11 +461,9 @@ input {
     letter-spacing: 0.1em;
 }
 
-
 .user-search {
     padding: 10px 14px;
 }
-
 
 .user-search input {
     width: 100%;
@@ -563,11 +487,9 @@ input {
         box-shadow 0.2s;
 }
 
-
 .user-search input::placeholder {
     color: #62566a;
 }
-
 
 .user-search input:focus {
     border-color: var(--accent);
@@ -576,7 +498,6 @@ input {
         0 0 18px rgba(255, 79, 179, 0.07);
 }
 
-
 .user-list {
     flex: 1;
 
@@ -584,11 +505,6 @@ input {
 
     padding: 6px;
 }
-
-
-/* ============================================================
-   USER ITEMS
-   ============================================================ */
 
 .user-item {
     width: 100%;
@@ -618,17 +534,12 @@ input {
         box-shadow 0.2s;
 }
 
-
 .user-item:hover {
     background: var(--panel2);
 
     box-shadow:
         inset 3px 0 0 var(--accent2);
 }
-
-/* ============================================================
-   GLOBAL CHAT
-   ============================================================ */
 
 .global-chat-item {
     margin: 4px 6px 6px;
@@ -648,7 +559,6 @@ input {
         0 5px 20px rgba(0, 0, 0, 0.08);
 }
 
-
 .global-chat-item:hover {
     background:
         linear-gradient(
@@ -663,7 +573,6 @@ input {
         inset 3px 0 0 var(--accent),
         0 5px 20px rgba(0, 0, 0, 0.12);
 }
-
 
 .global-chat-item.active {
     background:
@@ -680,7 +589,6 @@ input {
         inset 3px 0 0 var(--accent),
         0 5px 25px rgba(255, 79, 179, 0.06);
 }
-
 
 .global-chat-avatar {
     background:
@@ -701,11 +609,9 @@ input {
         0 0 20px rgba(255, 79, 179, 0.08);
 }
 
-
 .global-chat-item .user-display-name {
     color: var(--text);
 }
-
 
 .global-chat-item .user-username {
     color: var(--accent2);
@@ -747,11 +653,9 @@ input {
         0 0 20px rgba(255, 79, 179, 0.04);
 }
 
-
 .user-info {
     min-width: 0;
 }
-
 
 .user-display-name {
     overflow: hidden;
@@ -764,7 +668,6 @@ input {
 
     font-weight: 600;
 }
-
 
 .user-username {
     margin-top: 2px;
@@ -786,7 +689,6 @@ input {
     white-space: nowrap;
 }
 
-
 .sidebar-empty {
     padding: 20px;
 
@@ -802,11 +704,6 @@ input {
 
     font-size: 11px;
 }
-
-
-/* ============================================================
-   CONVERSATION
-   ============================================================ */
 
 .conversation {
     flex: 1;
@@ -826,7 +723,6 @@ input {
         );
 }
 
-
 .conversation-header {
     min-height: 66px;
 
@@ -839,7 +735,6 @@ input {
     border-bottom: 1px solid var(--line);
 }
 
-
 .conversation-user {
     display: flex;
 
@@ -848,13 +743,11 @@ input {
     gap: 12px;
 }
 
-
 .conversation-name {
     font-size: 15px;
 
     font-weight: 600;
 }
-
 
 .conversation-username {
     margin-top: 2px;
@@ -870,7 +763,6 @@ input {
     font-size: 10px;
 }
 
-
 .conversation-placeholder {
     color: var(--muted);
 
@@ -882,11 +774,6 @@ input {
 
     font-size: 11px;
 }
-
-
-/* ============================================================
-   MESSAGES
-   ============================================================ */
 
 .messages {
     flex: 1;
@@ -901,7 +788,6 @@ input {
 
     gap: 10px;
 }
-
 
 .empty {
     margin: auto;
@@ -918,7 +804,6 @@ input {
 
     text-align: center;
 }
-
 
 .message {
     max-width: 80%;
@@ -939,11 +824,9 @@ input {
         transform 0.2s;
 }
 
-
 .message:hover {
     border-color: #493652;
 }
-
 
 .message.own {
     align-self: flex-end;
@@ -958,7 +841,6 @@ input {
     border-color:
         rgba(255, 79, 179, 0.28);
 }
-
 
 .username {
     margin-bottom: 3px;
@@ -978,11 +860,9 @@ input {
     letter-spacing: 0.03em;
 }
 
-
 .message.own .username {
     color: var(--pink);
 }
-
 
 .content {
     color: #d8ceda;
@@ -991,11 +871,6 @@ input {
 
     word-break: break-word;
 }
-
-
-/* ============================================================
-   MESSAGE INPUT
-   ============================================================ */
 
 .message-form {
     padding: 14px;
@@ -1008,7 +883,6 @@ input {
 
     background: rgba(16, 11, 25, 0.95);
 }
-
 
 .message-form input {
     flex: 1;
@@ -1034,11 +908,9 @@ input {
         box-shadow 0.2s;
 }
 
-
 .message-form input::placeholder {
     color: #62566a;
 }
-
 
 .message-form input:focus {
     border-color: var(--accent);
@@ -1046,7 +918,6 @@ input {
     box-shadow:
         0 0 18px rgba(255, 79, 179, 0.07);
 }
-
 
 .message-form button {
     width: 45px;
@@ -1072,7 +943,6 @@ input {
         box-shadow 0.2s;
 }
 
-
 .message-form button:hover {
     background: var(--pink);
 
@@ -1082,22 +952,15 @@ input {
         0 8px 25px rgba(255, 79, 179, 0.18);
 }
 
-
-/* ============================================================
-   SCROLLBARS
-   ============================================================ */
-
 .messages::-webkit-scrollbar,
 .user-list::-webkit-scrollbar {
     width: 7px;
 }
 
-
 .messages::-webkit-scrollbar-track,
 .user-list::-webkit-scrollbar-track {
     background: transparent;
 }
-
 
 .messages::-webkit-scrollbar-thumb,
 .user-list::-webkit-scrollbar-thumb {
@@ -1106,15 +969,10 @@ input {
     border-radius: 10px;
 }
 
-
 .messages::-webkit-scrollbar-thumb:hover,
 .user-list::-webkit-scrollbar-thumb:hover {
     background: #493652;
 }
-
-/* ============================================================
-   MOBILE CHAT CONTROLS
-   ============================================================ */
 
 .mobile-chat-selector {
     display: none;
@@ -1145,18 +1003,15 @@ input {
         transform 0.2s;
 }
 
-
 .mobile-chat-selector:hover {
     background: #21142f;
 
     border-color: var(--accent2);
 }
 
-
 .mobile-chat-selector:active {
     transform: scale(0.94);
 }
-
 
 .mobile-chat-selector span {
     display: block;
@@ -1174,11 +1029,6 @@ input {
         transform 0.2s,
         opacity 0.2s;
 }
-
-
-/* ============================================================
-   MOBILE SIDEBAR BACKDROP
-   ============================================================ */
 
 .mobile-sidebar-backdrop {
     display: none;
@@ -1202,11 +1052,6 @@ input {
         opacity 0.25s ease;
 }
 
-
-/* ============================================================
-   MOBILE SIDEBAR
-   ============================================================ */
-
 @media (max-width: 700px) {
 
     html,
@@ -1219,11 +1064,9 @@ input {
         overflow: hidden;
     }
 
-
     body {
         align-items: stretch;
     }
-
 
     .chat {
         width: 100%;
@@ -1236,7 +1079,6 @@ input {
         position: relative;
     }
 
-
     .chat-header {
         min-height: 64px;
 
@@ -1247,11 +1089,9 @@ input {
             14px;
     }
 
-
     .chat-header h1 {
         font-size: 16px;
     }
-
 
     .chat-body {
         position: relative;
@@ -1260,11 +1100,6 @@ input {
 
         overflow: hidden;
     }
-
-
-    /* --------------------------------------------------------
-       SIDEBAR DRAWER
-       -------------------------------------------------------- */
 
     .user-sidebar {
         position: absolute;
@@ -1291,16 +1126,13 @@ input {
         will-change: transform;
     }
 
-
     .user-sidebar.mobile-open {
         transform: translateX(0);
     }
 
-
     .mobile-sidebar-backdrop {
         display: block;
     }
-
 
     .mobile-sidebar-backdrop.mobile-visible {
         opacity: 1;
@@ -1308,25 +1140,14 @@ input {
         pointer-events: auto;
     }
 
-
-    /* --------------------------------------------------------
-       MOBILE SELECTOR
-       -------------------------------------------------------- */
-
     .mobile-chat-selector {
         display: flex;
     }
-
-
-    /* --------------------------------------------------------
-       CONVERSATION
-       -------------------------------------------------------- */
 
     .conversation {
         width: 100%;
         min-width: 0;
     }
-
 
     .conversation-header {
         min-height: 60px;
@@ -1334,11 +1155,9 @@ input {
         padding: 8px 12px;
     }
 
-
     .conversation-user {
         min-width: 0;
     }
-
 
     .conversation-name {
         overflow: hidden;
@@ -1350,20 +1169,13 @@ input {
         font-size: 14px;
     }
 
-
     .conversation-username {
         font-size: 9px;
     }
 
-
     .conversation-placeholder {
         font-size: 10px;
     }
-
-
-    /* --------------------------------------------------------
-       MESSAGES
-       -------------------------------------------------------- */
 
     .messages {
         padding: 12px;
@@ -1375,24 +1187,17 @@ input {
         -webkit-overflow-scrolling: touch;
     }
 
-
     .message {
         max-width: 88%;
 
         padding: 9px 12px;
     }
 
-
     .content {
         font-size: 15px;
 
         line-height: 1.45;
     }
-
-
-    /* --------------------------------------------------------
-       MESSAGE INPUT
-       -------------------------------------------------------- */
 
     .message-form {
         flex-shrink: 0;
@@ -1406,7 +1211,6 @@ input {
         gap: 7px;
     }
 
-
     .message-form input {
         min-width: 0;
 
@@ -1415,18 +1219,13 @@ input {
         padding:
             0 13px;
 
-        /*
-         * 16px prevents iOS Safari from zooming
-         * the entire page when the input is focused.
-         */
-
+        /* 16px stops iOS Safari from zooming in on focus */
         font-size: 16px;
 
         border-radius: 8px;
 
         -webkit-appearance: none;
     }
-
 
     .message-form button {
         width: 46px;
@@ -1443,17 +1242,11 @@ input {
         -webkit-tap-highlight-color: transparent;
     }
 
-
-    /* --------------------------------------------------------
-       USER LIST
-       -------------------------------------------------------- */
-
     .user-list {
         overscroll-behavior: contain;
 
         -webkit-overflow-scrolling: touch;
     }
-
 
     .user-item {
         min-height: 58px;
@@ -1463,37 +1256,24 @@ input {
         -webkit-tap-highlight-color: transparent;
     }
 
-
     .user-search input {
         height: 42px;
 
         font-size: 16px;
     }
 
-
-    /* --------------------------------------------------------
-       USER CONTROLS
-       -------------------------------------------------------- */
-
     .user-controls {
         gap: 5px;
     }
-
 
     #current-user {
         display: none;
     }
 
-
     #logout-button {
         padding: 7px 10px;
     }
 }
-
-
-/* ============================================================
-   SMALL MOBILE
-   ============================================================ */
 
 @media (max-width: 550px) {
 
@@ -1501,13 +1281,11 @@ input {
         width: min(300px, 88vw);
     }
 
-
     .chat-header {
         padding:
             9px
             10px;
     }
-
 
     .conversation-header {
         padding:
@@ -1515,30 +1293,19 @@ input {
             10px;
     }
 
-
     .messages {
         padding:
             10px;
     }
 
-
     .message {
         max-width: 90%;
     }
 }
-/* ============================================================
-   SELECTION
-   ============================================================ */
-
 ::selection {
     background: rgba(255, 79, 179, 0.3);
     color: var(--text);
 }
-
-
-/* ============================================================
-   GOOGLE LOGIN
-   ============================================================ */
 
 .google-login {
     width: 100%;
@@ -1583,7 +1350,6 @@ input {
     opacity: 0.5;
     cursor: not-allowed;
 }
-
 
 /* Google icon */
 

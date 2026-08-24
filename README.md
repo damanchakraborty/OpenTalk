@@ -6,8 +6,6 @@ A simple real-time chat application built with vanilla JavaScript and Supabase.
   <img src="assets/chat.png" alt="OpenTalk" width="900">
 </p>
 
-## Note: Make a Google OAuth Client at https://console.cloud.google.com/ and add your Javascript origins (Github Pages URL) and Redirect URLs (Supabase Callback URL)
-
 ### Login
 
 <p align="center">
@@ -61,6 +59,8 @@ Configure the redirect URL to point to:
 ```text
 auth-callback.html
 ```
+## Note: Make a Google OAuth Client at https://console.cloud.google.com/ and add your Javascript origins (Github Pages URL) and Redirect URLs (Supabase Callback URL)
+
 
 ### 4. Create the database
 

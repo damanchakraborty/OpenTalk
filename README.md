@@ -475,7 +475,7 @@ Stores messages belonging to conversations.
 
 Messages are limited to 500 characters.
 
-## Profile Pictures
+## Profile Pictures (Broken for now)
 
 OpenTalk supports both Google profile pictures and uploaded images.
 
